@@ -1,0 +1,22 @@
+@startuml ResumeMind-Sequence
+actor 用户
+participant "AnalyzePage" as FE
+participant "Gateway" as GW
+participant "OcrService" as OCR
+participant "AnalysisService" as AI
+database "SQLite" as DB
+
+用户 -> FE : 上传简历 + JD
+FE -> GW : POST /api/analyze
+GW -> OCR : extractResumeText()
+alt PDF 扫描件
+  OCR -> AI : ocrImageToText(每页)
+  AI --> OCR : 页面文字
+end
+OCR --> GW : resumeText
+GW -> AI : analyzeResume()
+AI --> GW : JSON 诊断结果
+GW -> DB : saveAnalysis()
+GW --> FE : AnalysisResult
+FE --> 用户 : 圆环得分 + 建议
+@enduml

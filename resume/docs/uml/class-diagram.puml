@@ -1,0 +1,57 @@
+@startuml ResumeMind-Class
+skinparam classAttributeIconSize 0
+
+package "前端 Angular" {
+  class AnalyzePage
+  class HistoryPage
+  class DashboardPage
+  class ResumeApiService
+  class ScoreRingComponent
+  class ResultPanelComponent
+  AnalyzePage --> ResumeApiService
+  HistoryPage --> ResumeApiService
+  DashboardPage --> ResumeApiService
+  AnalyzePage --> ResultPanelComponent
+  ResultPanelComponent --> ScoreRingComponent
+}
+
+package "网关 Gateway" {
+  class ExpressGateway
+}
+
+package "OCR 微服务" {
+  class OcrService {
+    +extractResumeText()
+  }
+}
+
+package "Analysis 微服务" {
+  class AnalysisService {
+    +analyzeResume()
+    +ocrImageToText()
+  }
+}
+
+package "Data 微服务" {
+  class Database {
+    +saveAnalysis()
+    +listHistory()
+    +getDashboard()
+  }
+  class User
+  class JobPost
+  class ResumeFile
+  class Analysis
+  class Keyword
+  Database --> User
+  Database --> JobPost
+  Database --> ResumeFile
+  Database --> Analysis
+  Analysis --> Keyword
+}
+
+ResumeApiService --> ExpressGateway : HTTP
+ExpressGateway --> OcrService
+ExpressGateway --> AnalysisService
+ExpressGateway --> Database
+@enduml

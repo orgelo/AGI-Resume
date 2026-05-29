@@ -1,0 +1,33 @@
+<div class="layout">
+  <aside class="sidebar">
+    <div class="logo">
+      <span class="logo-icon">📄</span>
+      <span class="logo-text">ResumeMind</span>
+    </div>
+    <nav class="nav">
+      <a routerLink="/analyze" [class.active]="currentRoute === 'analyze'">
+        <span class="nav-icon">🔍</span>
+        <span class="nav-text">智能分析</span>
+      </a>
+      <a routerLink="/dashboard" [class.active]="currentRoute === 'dashboard'">
+        <span class="nav-icon">📊</span>
+        <span class="nav-text">数据看板</span>
+      </a>
+      <a routerLink="/history" [class.active]="currentRoute === 'history'">
+        <span class="nav-icon">📋</span>
+        <span class="nav-text">分析历史</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="api-status" [class.online]="backendOnline">
+        <span class="status-dot"></span>
+        <span>{{ backendOnline ? '后端在线' : '后端离线' }}</span>
+      </div>
+    </div>
+  </aside>
+  <main class="content">
+    <div class="page-content">
+      <router-outlet />
+    </div>
+  </main>
+</div>

@@ -1,0 +1,120 @@
+<div class="page compare-page" *ngIf="!loading && !error">
+  <a routerLink="/history" class="back">← 返回历史列表</a>
+  <header class="page-head">
+    <h1>分析结果对比</h1>
+    <p>对比两份简历分析结果的差异</p>
+  </header>
+
+  <div class="compare-grid" *ngIf="record1 && record2">
+    <div class="compare-card">
+      <div class="card-header">
+        <h2>{{ record1.fileName }}</h2>
+        <p>{{ record1.jobTitle || '未填写岗位名' }}</p>
+        <p class="date">{{ record1.createdAt | date: 'yyyy-MM-dd HH:mm' }}</p>
+      </div>
+
+      <div class="scores">
+        <div class="score-item">
+          <span class="score-label">结构分</span>
+          <span class="score-value">{{ record1.result?.diagnosis?.structureScore || 0 }}</span>
+        </div>
+        <div class="score-item">
+          <span class="score-label">表达分</span>
+          <span class="score-value">{{ record1.result?.diagnosis?.expressionScore || 0 }}</span>
+        </div>
+        <div class="score-item">
+          <span class="score-label">匹配度</span>
+          <span class="score-value highlight">{{ record1.matchScore }}%</span>
+        </div>
+      </div>
+
+      <div class="keywords">
+        <h4>已匹配关键词</h4>
+        <div class="tag-list">
+          <span class="tag matched" *ngFor="let k of record1.result?.matching?.matchedKeywords?.slice(0, 6)">{{ k }}</span>
+        </div>
+      </div>
+
+      <div class="keywords missing" *ngIf="record1.result?.matching?.missingKeywords?.length">
+        <h4>缺失关键词</h4>
+        <div class="tag-list">
+          <span class="tag miss" *ngFor="let k of record1.result?.matching?.missingKeywords?.slice(0, 6)">{{ k }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="vs-divider">
+      <span>VS</span>
+    </div>
+
+    <div class="compare-card">
+      <div class="card-header">
+        <h2>{{ record2.fileName }}</h2>
+        <p>{{ record2.jobTitle || '未填写岗位名' }}</p>
+        <p class="date">{{ record2.createdAt | date: 'yyyy-MM-dd HH:mm' }}</p>
+      </div>
+
+      <div class="scores">
+        <div class="score-item">
+          <span class="score-label">结构分</span>
+          <span class="score-value">{{ record2.result?.diagnosis?.structureScore || 0 }}</span>
+        </div>
+        <div class="score-item">
+          <span class="score-label">表达分</span>
+          <span class="score-value">{{ record2.result?.diagnosis?.expressionScore || 0 }}</span>
+        </div>
+        <div class="score-item">
+          <span class="score-label">匹配度</span>
+          <span class="score-value highlight">{{ record2.matchScore }}%</span>
+        </div>
+      </div>
+
+      <div class="keywords">
+        <h4>已匹配关键词</h4>
+        <div class="tag-list">
+          <span class="tag matched" *ngFor="let k of record2.result?.matching?.matchedKeywords?.slice(0, 6)">{{ k }}</span>
+        </div>
+      </div>
+
+      <div class="keywords missing" *ngIf="record2.result?.matching?.missingKeywords?.length">
+        <h4>缺失关键词</h4>
+        <div class="tag-list">
+          <span class="tag miss" *ngFor="let k of record2.result?.matching?.missingKeywords?.slice(0, 6)">{{ k }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="comparison-summary" *ngIf="record1 && record2">
+    <h3>对比总结</h3>
+    <div class="summary-grid">
+      <div class="summary-item">
+        <span class="summary-label">匹配度</span>
+        <span class="summary-diff" [class]="getScoreClass(record1.matchScore, record2.matchScore)">
+          {{ record1.fileName }} {{ getScoreDiff(record1.matchScore, record2.matchScore) }}%
+        </span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">结构分</span>
+        <span class="summary-diff" [class]="getScoreClass(record1.result?.diagnosis?.structureScore, record2.result?.diagnosis?.structureScore)">
+          {{ getScoreDiff(record1.result?.diagnosis?.structureScore, record2.result?.diagnosis?.structureScore) }}
+        </span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">表达分</span>
+        <span class="summary-diff" [class]="getScoreClass(record1.result?.diagnosis?.expressionScore, record2.result?.diagnosis?.expressionScore)">
+          {{ getScoreDiff(record1.result?.diagnosis?.expressionScore, record2.result?.diagnosis?.expressionScore) }}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page compare-page" *ngIf="loading">
+  <div class="loading">加载中...</div>
+</div>
+
+<div class="page compare-page" *ngIf="error">
+  <a routerLink="/history" class="back">← 返回历史列表</a>
+  <div class="error">{{ error }}</div>
+</div>

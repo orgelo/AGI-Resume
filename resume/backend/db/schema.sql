@@ -1,0 +1,50 @@
+-- ResumeMind 数据库模式
+
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username VARCHAR(64) NOT NULL UNIQUE,
+  email VARCHAR(128),
+  role VARCHAR(32) DEFAULT 'student',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS job_posts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title VARCHAR(128) NOT NULL,
+  industry VARCHAR(64),
+  description TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS resume_files (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER,
+  file_name VARCHAR(255) NOT NULL,
+  mime_type VARCHAR(64),
+  extracted_text TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS analyses (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  resume_id INTEGER,
+  job_id INTEGER,
+  structure_score REAL DEFAULT 0,
+  expression_score REAL DEFAULT 0,
+  quant_score REAL DEFAULT 0,
+  match_score REAL DEFAULT 0,
+  result_json TEXT NOT NULL,
+  is_favorite INTEGER DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (resume_id) REFERENCES resume_files(id),
+  FOREIGN KEY (job_id) REFERENCES job_posts(id)
+);
+
+CREATE TABLE IF NOT EXISTS keywords (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  analysis_id INTEGER NOT NULL,
+  keyword VARCHAR(64) NOT NULL,
+  match_type VARCHAR(16) NOT NULL,
+  FOREIGN KEY (analysis_id) REFERENCES analyses(id)
+);

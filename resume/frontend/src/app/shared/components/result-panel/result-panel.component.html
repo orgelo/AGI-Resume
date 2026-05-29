@@ -1,0 +1,41 @@
+<div class="panel">
+  <div class="panel-empty" *ngIf="!analysis && !loading">
+    上传简历并输入 JD 后，点击「开始分析」。
+  </div>
+  <div class="panel-loading" *ngIf="loading">
+    <p>AI 正在诊断与匹配岗位…</p>
+    <p class="hint" *ngIf="loadingHint">{{ loadingHint }}</p>
+  </div>
+  <div class="panel-error" *ngIf="errorMessage && !loading">{{ errorMessage }}</div>
+
+  <ng-container *ngIf="analysis && !loading">
+    <div class="rings">
+      <app-score-ring label="结构" [score]="analysis.diagnosis?.structureScore" />
+      <app-score-ring label="表达" [score]="analysis.diagnosis?.expressionScore" />
+      <app-score-ring label="匹配" [score]="analysis.matching?.matchScore" />
+    </div>
+
+    <section class="block">
+      <h3>智能诊断</h3>
+      <p><b>结构建议：</b>{{ analysis.diagnosis?.recommendations?.structure?.join('；') || '—' }}</p>
+      <p><b>表达建议：</b>{{ analysis.diagnosis?.recommendations?.expression?.join('；') || '—' }}</p>
+      <p><b>量化建议：</b>{{ analysis.diagnosis?.recommendations?.quant?.join('；') || '—' }}</p>
+    </section>
+
+    <section class="block">
+      <h3>岗位匹配</h3>
+      <p>已匹配关键词 {{ analysis.matching?.matchedKeywords | keywordCount }} 个</p>
+      <p><b>目标建议：</b>{{ analysis.matching?.targetedAdvice?.join('；') || '—' }}</p>
+      <div class="tags" *ngIf="analysis.matching?.missingKeywords?.length">
+        <span class="tag miss" *ngFor="let k of analysis.matching?.missingKeywords?.slice(0, 8)">{{ k }}</span>
+      </div>
+    </section>
+
+    <section class="block">
+      <h3>智能优化</h3>
+      <ul>
+        <li *ngFor="let item of (analysis.optimization?.rewrittenHighlights ?? []).slice(0, 6)">{{ item }}</li>
+      </ul>
+    </section>
+  </ng-container>
+</div>

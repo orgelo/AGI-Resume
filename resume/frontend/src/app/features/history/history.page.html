@@ -1,0 +1,77 @@
+<div class="page history-page">
+  <header class="page-head">
+    <div class="header-row">
+      <div>
+        <h1>分析历史</h1>
+        <p>共 {{ total }} 条分析记录</p>
+      </div>
+      <div class="header-actions">
+        <button class="filter-btn" [class.active]="favoritesOnly" (click)="toggleFavoritesFilter()">
+          {{ favoritesOnly ? '显示全部' : '只看收藏' }}
+        </button>
+        <button class="compare-btn" [disabled]="selectedIds.length !== 2" (click)="compare()">
+          对比 ({{ selectedIds.length }}/2)
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <p class="error" *ngIf="error">{{ error }}</p>
+
+  <div class="loading" *ngIf="loading">加载中...</div>
+
+  <div class="table-wrapper" *ngIf="records.length && !loading">
+    <table class="table">
+      <thead>
+        <tr>
+          <th class="col-select">选择</th>
+          <th>时间</th>
+          <th>文件</th>
+          <th>岗位</th>
+          <th>匹配度</th>
+          <th>收藏</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of records" [class.selected]="selectedIds.includes(r.id)">
+          <td class="col-select">
+            <input type="checkbox" [checked]="selectedIds.includes(r.id)" (change)="toggleSelect(r.id, $event)" />
+          </td>
+          <td>{{ r.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+          <td>{{ r.fileName | truncate: 24 }}</td>
+          <td>{{ r.jobTitle || '—' }}</td>
+          <td><span [class]="r.matchScore | scoreColor">{{ r.matchScore }}%</span></td>
+          <td class="col-star">
+            <button class="star-btn" [class.starred]="r.isFavorite" (click)="toggleFavorite(r, $event)">
+              {{ r.isFavorite ? '★' : '☆' }}
+            </button>
+          </td>
+          <td class="actions">
+            <span class="action-btns">
+              <button class="view-btn" [routerLink]="['/history', r.id]">查看详情</button>
+              <button class="delete-btn" (click)="deleteRecord(r.id, $event)">删除</button>
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="empty" *ngIf="!records.length && !loading">
+    <p>{{ favoritesOnly ? '暂无收藏记录' : '暂无记录，请先在「分析」页完成一次分析。' }}</p>
+  </div>
+
+  <div class="pagination" *ngIf="totalPages > 1 && !loading">
+    <button [disabled]="currentPage === 1" (click)="goToPage(1)">首页</button>
+    <button [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">上一页</button>
+    <button
+      *ngFor="let p of pages"
+      [class.active]="p === currentPage"
+      (click)="goToPage(p)">
+      {{ p }}
+    </button>
+    <button [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">下一页</button>
+    <button [disabled]="currentPage === totalPages" (click)="goToPage(totalPages)">末页</button>
+  </div>
+</div>

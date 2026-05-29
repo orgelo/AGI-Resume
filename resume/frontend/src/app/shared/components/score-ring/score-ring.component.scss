@@ -1,0 +1,54 @@
+.ring {
+  position: relative;
+  width: 96px;
+  height: 96px;
+
+  svg {
+    transform: rotate(-90deg);
+    width: 100%;
+    height: 100%;
+  }
+
+  .ring-bg {
+    fill: none;
+    stroke: #e2e8f0;
+    stroke-width: 8;
+  }
+
+  .ring-fg {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 283;
+    transition: stroke-dashoffset 0.6s ease, stroke 0.3s ease;
+  }
+
+  &.high .ring-fg {
+    stroke: #10b981;
+  }
+  &.mid .ring-fg {
+    stroke: #f59e0b;
+  }
+  &.low .ring-fg {
+    stroke: #ef4444;
+  }
+}
+
+.ring-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+
+  strong {
+    font-size: 22px;
+    line-height: 1;
+  }
+  span {
+    margin-top: 4px;
+    color: #64748b;
+  }
+}

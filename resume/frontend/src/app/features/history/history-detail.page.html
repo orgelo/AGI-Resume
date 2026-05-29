@@ -1,0 +1,11 @@
+<div class="page" *ngIf="record">
+  <a routerLink="/history" class="back">← 返回历史列表</a>
+  <header class="page-head">
+    <h1>{{ record.fileName }}</h1>
+    <p>{{ record.jobTitle || '未填写岗位名' }} · {{ record.createdAt | date: 'medium' }}</p>
+    <button class="export-btn" (click)="exportResult()">导出报告</button>
+  </header>
+  <section class="card">
+    <app-result-panel [analysis]="record.result ?? null" />
+  </section>
+</div>

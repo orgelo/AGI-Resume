@@ -1,0 +1,51 @@
+<div class="page analyze-page">
+  <header class="page-head">
+    <h1>简历智能分析</h1>
+    <p>上传 PDF/DOCX，结合 JD 完成诊断、匹配与优化建议</p>
+  </header>
+
+  <div class="grid">
+    <section class="card">
+      <h2>上传与分析</h2>
+
+      <label>岗位名称</label>
+      <input type="text" [(ngModel)]="jobTitle" placeholder="如：前端开发工程师" />
+
+      <label>简历文件</label>
+      <input type="file" id="resume-file" accept=".pdf,.docx" (change)="onFileChange($event)" />
+      <label for="resume-file" class="file-upload-area" [class.has-file]="file">
+        <div *ngIf="!file">
+          <div class="upload-icon">📄</div>
+          <div class="upload-text">点击选择简历文件</div>
+          <div class="upload-hint">支持 PDF、DOCX 格式</div>
+        </div>
+        <div *ngIf="file" class="file-preview">
+          <span class="file-icon">📄</span>
+          <div class="file-info">
+            <span class="file-name">{{ file.name }}</span>
+            <span class="file-size">{{ formatFileSize(file.size) }}</span>
+          </div>
+          <button class="file-remove" (click)="removeFile($event)">×</button>
+        </div>
+      </label>
+
+      <label>岗位描述 JD <span class="char-count">{{ jobDescription.length }} 字</span></label>
+      <textarea rows="8" [(ngModel)]="jobDescription" placeholder="从招聘网站复制 JD 内容到这里..."></textarea>
+
+      <button type="button" class="btn-primary" (click)="$event.preventDefault(); $event.stopPropagation(); onAnalyze()" [disabled]="loading || !file">
+        {{ loading ? '分析中…' : '开始分析' }}
+      </button>
+      <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+    </section>
+
+    <section class="card">
+      <h2>分析结果</h2>
+      <app-result-panel
+        [analysis]="analysis"
+        [loading]="loading"
+        [loadingHint]="loadingHint"
+        [errorMessage]="errorMessage"
+      />
+    </section>
+  </div>
+</div>
