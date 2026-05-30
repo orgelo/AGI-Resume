@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ResumeApiService } from '../../core/services/resume-api.service';
-import { DashboardStats, AnalysisRecord } from '../../core/models/analysis.model';
+import { DashboardStats, AnalysisRecord, ScoreTrendData } from '../../core/models/analysis.model';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -25,6 +25,32 @@ export class DashboardPage implements OnInit {
     { label: '周六', count: 0 },
     { label: '周日', count: 0 },
   ];
+
+  scoreTrend: ScoreTrendData[] = [];
+
+  get hasScoreData(): boolean {
+    return this.scoreTrend.some(d => d.avgMatch !== null || d.avgStructure !== null);
+  }
+
+  getMatchPoints(): string {
+    if (!this.scoreTrend.length) return '';
+    const data = this.scoreTrend.slice(-7);
+    return data.map((d, i) => {
+      const x = (i / Math.max(data.length - 1, 1)) * 800;
+      const y = 120 - ((d.avgMatch || 0) / 100) * 120;
+      return `${x},${y}`;
+    }).join(' ');
+  }
+
+  getStructurePoints(): string {
+    if (!this.scoreTrend.length) return '';
+    const data = this.scoreTrend.slice(-7);
+    return data.map((d, i) => {
+      const x = (i / Math.max(data.length - 1, 1)) * 800;
+      const y = 120 - ((d.avgStructure || 0) / 100) * 120;
+      return `${x},${y}`;
+    }).join(' ');
+  }
 
   circumference = 2 * Math.PI * 52;
 
@@ -59,6 +85,13 @@ export class DashboardPage implements OnInit {
     this.api.getHistory(1, 5).subscribe({
       next: (res) => {
         this.recentRecords = res.list;
+        this.cdr.detectChanges();
+      },
+    });
+
+    this.api.getScoreTrend().subscribe({
+      next: (data) => {
+        this.scoreTrend = data;
         this.cdr.detectChanges();
       },
     });

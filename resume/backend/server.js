@@ -13,6 +13,14 @@ const {
   getHistoryById,
   toggleFavorite,
   getDashboard,
+  getScoreTrend,
+  getAllTags,
+  createTag,
+  deleteTag,
+  getTagsByAnalysis,
+  setAnalysisTags,
+  addTagToAnalysis,
+  removeTagFromAnalysis,
 } = require('./db/database');
 
 dotenv.config();
@@ -102,6 +110,11 @@ app.get('/api/dashboard', (_req, res) => {
   res.json(getDashboard(db));
 });
 
+app.get('/api/score-trend', (_req, res) => {
+  if (!db) return res.json([]);
+  res.json(getScoreTrend(db));
+});
+
 app.get('/api/history', (req, res) => {
   if (!db) return res.json({ list: [], total: 0 });
   const page = Math.max(1, Number(req.query.page) || 1);
@@ -110,7 +123,8 @@ app.get('/api/history', (req, res) => {
   const favoritesOnly = req.query.favorites === '1';
   const search = String(req.query.search || '').trim();
   const minScore = Math.max(0, Number(req.query.minScore) || 0);
-  const result = listHistoryPaginated(db, page, pageSize, offset, favoritesOnly, search, minScore);
+  const tagId = Number(req.query.tagId) || 0;
+  const result = listHistoryPaginated(db, page, pageSize, offset, favoritesOnly, search, minScore, tagId);
   res.json(result);
 });
 
@@ -199,7 +213,49 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
   } catch (err) {
     console.error('[analyze] 失败：', err?.message || err);
     return res.status(500).json({ error: err?.message || String(err) });
-  }
+   }
+ });
+
+app.get('/api/tags', (_req, res) => {
+  if (!db) return res.status(503).json({ error: '数据库未就绪' });
+  res.json(getAllTags(db));
+});
+
+app.post('/api/tags', (req, res) => {
+  if (!db) return res.status(503).json({ error: '数据库未就绪' });
+  const { name, color } = req.body;
+  if (!name) return res.status(400).json({ error: '标签名称不能为空' });
+  const tag = createTag(db, name, color || '#3b82f6');
+  if (!tag) return res.status(400).json({ error: '标签已存在' });
+  res.json(tag);
+});
+
+app.delete('/api/tags/:id', (req, res) => {
+  if (!db) return res.status(503).json({ error: '数据库未就绪' });
+  deleteTag(db, Number(req.params.id));
+  res.json({ success: true });
+});
+
+app.get('/api/history/:id/tags', (req, res) => {
+  if (!db) return res.status(503).json({ error: '数据库未就绪' });
+  res.json(getTagsByAnalysis(db, Number(req.params.id)));
+});
+
+app.post('/api/history/:id/tags', (req, res) => {
+  if (!db) return res.status(503).json({ error: '数据库未就绪' });
+  const { tagIds } = req.body;
+  if (!Array.isArray(tagIds)) return res.status(400).json({ error: 'tagIds 必须是数组' });
+  res.json(setAnalysisTags(db, Number(req.params.id), tagIds));
+});
+
+app.post('/api/history/:id/tags/:tagId', (req, res) => {
+  if (!db) return res.status(503).json({ error: '数据库未就绪' });
+  res.json(addTagToAnalysis(db, Number(req.params.id), Number(req.params.tagId)));
+});
+
+app.delete('/api/history/:id/tags/:tagId', (req, res) => {
+  if (!db) return res.status(503).json({ error: '数据库未就绪' });
+  res.json(removeTagFromAnalysis(db, Number(req.params.id), Number(req.params.tagId)));
 });
 
 const server = app.listen(PORT, () => {

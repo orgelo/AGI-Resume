@@ -67,6 +67,7 @@ export interface AnalysisRecord {
   isFavorite?: boolean;
   createdAt: string;
   result?: AnalysisResult;
+  tags?: { id: number; name: string; color: string }[];
 }
 
 export interface DashboardStats {
@@ -77,6 +78,13 @@ export interface DashboardStats {
   weeklyData?: { label: string; count: number }[];
   bestAnalysis?: { id: number; fileName: string; jobTitle: string; matchScore: number } | null;
   topMissingKeywords?: { keyword: string; count: number }[];
+}
+
+export interface ScoreTrendData {
+  date: string;
+  label: string;
+  avgMatch: number | null;
+  avgStructure: number | null;
 }
 
 export interface PaginatedResponse {

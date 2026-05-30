@@ -41,6 +41,15 @@
       <div class="tags" *ngIf="analysis.matching?.missingKeywords?.length">
         <span class="tag miss" *ngFor="let k of analysis.matching?.missingKeywords?.slice(0, 8)">{{ k }}</span>
       </div>
+      <div class="keyword-tips" *ngIf="analysis.matching?.missingKeywords?.length">
+        <p class="tips-title">💡 关键词优化建议</p>
+        <ul class="tips-list">
+          <li>优先补充 <b>{{ getMissingKeywordsPreview() }}</b> 等高频要求的关键词</li>
+          <li>在简历的「工作经历」或「项目经验」中自然融入这些关键词</li>
+          <li>避免关键词堆砌，保持语句通顺专业</li>
+          <li>可参考 JD 中的技能要求列表，确保覆盖核心技能</li>
+        </ul>
+      </div>
     </section>
 
     <section class="block">

@@ -1,0 +1,18 @@
+<div class="custom-select" (click)="toggleDropdown($event)">
+  <div class="select-trigger">
+    <span class="select-label">{{ selectedLabel }}</span>
+    <svg class="arrow" [class.open]="isOpen" width="12" height="12" viewBox="0 0 12 12">
+      <path fill="#64748b" d="M6 8L1 3h10z" />
+    </svg>
+  </div>
+  <div class="dropdown-menu" *ngIf="isOpen" (click)="$event.stopPropagation()">
+    <div
+      class="dropdown-item"
+      *ngFor="let opt of options; trackBy: trackByFn"
+      [class.active]="opt.value === selectedValue"
+      (click)="selectOption(opt)"
+    >
+      {{ opt.label }}
+    </div>
+  </div>
+</div>

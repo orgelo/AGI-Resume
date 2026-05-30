@@ -48,3 +48,18 @@ CREATE TABLE IF NOT EXISTS keywords (
   match_type VARCHAR(16) NOT NULL,
   FOREIGN KEY (analysis_id) REFERENCES analyses(id)
 );
+
+CREATE TABLE IF NOT EXISTS tags (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name VARCHAR(64) NOT NULL UNIQUE,
+  color VARCHAR(16) DEFAULT '#3b82f6',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS analysis_tags (
+  analysis_id INTEGER NOT NULL,
+  tag_id INTEGER NOT NULL,
+  PRIMARY KEY (analysis_id, tag_id),
+  FOREIGN KEY (analysis_id) REFERENCES analyses(id) ON DELETE CASCADE,
+  FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+);

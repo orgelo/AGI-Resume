@@ -100,7 +100,7 @@ function listHistory(db) {
   return result;
 }
 
-function listHistoryPaginated(db, page, pageSize, offset, favoritesOnly = false, search = '', minScore = 0) {
+function listHistoryPaginated(db, page, pageSize, offset, favoritesOnly = false, search = '', minScore = 0, tagId = 0) {
   const where = [];
   const params = [];
   if (favoritesOnly) where.push('a.is_favorite = 1');
@@ -111,6 +111,10 @@ function listHistoryPaginated(db, page, pageSize, offset, favoritesOnly = false,
   if (minScore > 0) {
     where.push('a.match_score >= ?');
     params.push(minScore);
+  }
+  if (tagId > 0) {
+    where.push('EXISTS (SELECT 1 FROM analysis_tags at WHERE at.analysis_id = a.id AND at.tag_id = ?)');
+    params.push(tagId);
   }
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const total = db
@@ -134,6 +138,13 @@ function listHistoryPaginated(db, page, pageSize, offset, favoritesOnly = false,
        ORDER BY a.id DESC LIMIT ? OFFSET ?`
     )
     .all(...params, pageSize, offset);
+
+  for (const item of list) {
+    item.tags = db.prepare(
+      'SELECT t.id, t.name, t.color FROM tags t JOIN analysis_tags at ON t.id = at.tag_id WHERE at.analysis_id = ?'
+    ).all(item.id);
+  }
+
   return { list, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
 }
 
@@ -242,4 +253,86 @@ function getDashboard(db) {
   };
 }
 
-module.exports = { initDb, saveAnalysis, listHistory, listHistoryPaginated, deleteHistoryById, getHistoryById, toggleFavorite, getDashboard, DB_PATH };
+function getScoreTrend(db) {
+  const records = db
+    .prepare(
+      `SELECT date(created_at) AS date, AVG(match_score) AS avgMatch, AVG(structure_score) AS avgStructure
+       FROM analyses
+       WHERE datetime(created_at) >= datetime('now', '-30 days')
+       GROUP BY date(created_at)
+       ORDER BY date ASC
+       LIMIT 30`
+    )
+    .all();
+
+  const dayLabels = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  const today = new Date();
+  const result = [];
+
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    const dayOfWeek = dayLabels[d.getDay()];
+
+    const found = records.find(r => r.date === dateStr);
+    result.push({
+      date: dateStr,
+      label: dayOfWeek,
+      avgMatch: found ? Math.round(found.avgMatch * 10) / 10 : null,
+      avgStructure: found ? Math.round(found.avgStructure * 10) / 10 : null,
+    });
+  }
+
+  return result;
+}
+
+function getAllTags(db) {
+  return db.prepare('SELECT * FROM tags ORDER BY name ASC').all();
+}
+
+function createTag(db, name, color = '#3b82f6') {
+  try {
+    const result = db.prepare('INSERT INTO tags (name, color) VALUES (?, ?)').run(name, color);
+    return { id: result.lastInsertRowid, name, color };
+  } catch (e) {
+    return null;
+  }
+}
+
+function deleteTag(db, id) {
+  db.prepare('DELETE FROM analysis_tags WHERE tag_id = ?').run(id);
+  db.prepare('DELETE FROM tags WHERE id = ?').run(id);
+  return true;
+}
+
+function getTagsByAnalysis(db, analysisId) {
+  return db.prepare(
+    'SELECT t.* FROM tags t JOIN analysis_tags at ON t.id = at.tag_id WHERE at.analysis_id = ?'
+  ).all(analysisId);
+}
+
+function setAnalysisTags(db, analysisId, tagIds) {
+  db.prepare('DELETE FROM analysis_tags WHERE analysis_id = ?').run(analysisId);
+  const insert = db.prepare('INSERT INTO analysis_tags (analysis_id, tag_id) VALUES (?, ?)');
+  for (const tagId of tagIds) {
+    insert.run(analysisId, tagId);
+  }
+  return getTagsByAnalysis(db, analysisId);
+}
+
+function addTagToAnalysis(db, analysisId, tagId) {
+  try {
+    db.prepare('INSERT OR IGNORE INTO analysis_tags (analysis_id, tag_id) VALUES (?, ?)').run(analysisId, tagId);
+    return getTagsByAnalysis(db, analysisId);
+  } catch (e) {
+    return [];
+  }
+}
+
+function removeTagFromAnalysis(db, analysisId, tagId) {
+  db.prepare('DELETE FROM analysis_tags WHERE analysis_id = ? AND tag_id = ?').run(analysisId, tagId);
+  return getTagsByAnalysis(db, analysisId);
+}
+
+module.exports = { initDb, saveAnalysis, listHistory, listHistoryPaginated, deleteHistoryById, getHistoryById, toggleFavorite, getDashboard, getScoreTrend, getAllTags, createTag, deleteTag, getTagsByAnalysis, setAnalysisTags, addTagToAnalysis, removeTagFromAnalysis, DB_PATH };

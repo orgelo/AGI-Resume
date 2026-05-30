@@ -16,4 +16,10 @@ export class ResultPanelComponent {
   @Input() loading = false;
   @Input() loadingHint = '';
   @Input() errorMessage = '';
+
+  getMissingKeywordsPreview(): string {
+    const keywords = this.analysis?.matching?.missingKeywords;
+    if (!keywords || keywords.length === 0) return '';
+    return keywords.slice(0, 3).join('、');
+  }
 }
