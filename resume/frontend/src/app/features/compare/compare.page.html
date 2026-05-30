@@ -1,117 +1,177 @@
 <div class="page compare-page" *ngIf="!loading && !error">
   <a routerLink="/history" class="back">← 返回历史列表</a>
-  <header class="page-head">
-    <h1>分析结果对比</h1>
-    <p>对比两份简历分析结果的差异</p>
+  <header class="page-head hero">
+    <div>
+      <span class="eyebrow">版本对比</span>
+      <h1>简历优化前后对比</h1>
+      <p>对比两份分析结果，快速看出优化是否真正有效。</p>
+    </div>
+    <div class="hero-badge" *ngIf="record1 && record2">
+      {{ getWinner(record1.matchScore, record2.matchScore) }}
+    </div>
   </header>
 
+  <section class="summary-strip" *ngIf="record1 && record2">
+    <div class="summary-card" *ngFor="let item of getSummaryCards()">
+      <span class="summary-label">{{ item.label }}</span>
+      <div class="summary-scores">
+        <div class="score-box left" [class.win]="item.className === 'higher'">
+          <span>版本 1</span>
+          <strong>{{ item.left ?? '—' }}</strong>
+        </div>
+        <div class="score-box right" [class.win]="item.className === 'lower'">
+          <span>版本 2</span>
+          <strong>{{ item.right ?? '—' }}</strong>
+        </div>
+      </div>
+      <span class="summary-diff" [class]="item.className">{{ item.diff }}</span>
+    </div>
+  </section>
+
   <div class="compare-grid" *ngIf="record1 && record2">
-    <div class="compare-card">
+    <article class="compare-card version-card">
       <div class="card-header">
+        <span class="version-pill one">版本 1</span>
         <h2>{{ record1.fileName }}</h2>
         <p>{{ record1.jobTitle || '未填写岗位名' }}</p>
         <p class="date">{{ record1.createdAt | date: 'yyyy-MM-dd HH:mm' }}</p>
       </div>
 
-      <div class="scores">
-        <div class="score-item">
-          <span class="score-label">结构分</span>
-          <span class="score-value">{{ record1.result?.diagnosis?.structureScore || 0 }}</span>
-        </div>
-        <div class="score-item">
-          <span class="score-label">表达分</span>
-          <span class="score-value">{{ record1.result?.diagnosis?.expressionScore || 0 }}</span>
-        </div>
-        <div class="score-item">
-          <span class="score-label">匹配度</span>
-          <span class="score-value highlight">{{ record1.matchScore }}%</span>
-        </div>
+      <div class="score-hero">
+        <div class="score-main">{{ record1.matchScore }}%</div>
+        <div class="score-sub">匹配度</div>
       </div>
 
-      <div class="keywords">
-        <h4>已匹配关键词</h4>
+      <div class="pill-grid">
+        <div class="pill"><span>结构</span><strong>{{ record1.result?.diagnosis?.structureScore || 0 }}</strong></div>
+        <div class="pill"><span>表达</span><strong>{{ record1.result?.diagnosis?.expressionScore || 0 }}</strong></div>
+        <div class="pill"><span>ATS</span><strong>{{ record1.result?.diagnosis?.atsScore || 0 }}</strong></div>
+        <div class="pill"><span>完整</span><strong>{{ record1.result?.diagnosis?.completenessScore || 0 }}</strong></div>
+      </div>
+
+      <section class="mini-block">
+        <h4>亮点</h4>
         <div class="tag-list">
           <span class="tag matched" *ngFor="let k of record1.result?.matching?.matchedKeywords?.slice(0, 6)">{{ k }}</span>
         </div>
-      </div>
+      </section>
 
-      <div class="keywords missing" *ngIf="record1.result?.matching?.missingKeywords?.length">
+      <section class="mini-block" *ngIf="record1.result?.matching?.missingKeywords?.length">
         <h4>缺失关键词</h4>
         <div class="tag-list">
           <span class="tag miss" *ngFor="let k of record1.result?.matching?.missingKeywords?.slice(0, 6)">{{ k }}</span>
         </div>
-      </div>
-    </div>
+      </section>
+
+      <section class="mini-block" *ngIf="record1.result?.optimization?.rewrittenHighlights?.length">
+        <h4>改写建议</h4>
+        <ul>
+          <li *ngFor="let item of record1.result?.optimization?.rewrittenHighlights?.slice(0, 4)">{{ item }}</li>
+        </ul>
+      </section>
+    </article>
 
     <div class="vs-divider">
       <span>VS</span>
     </div>
 
-    <div class="compare-card">
+    <article class="compare-card version-card strong">
       <div class="card-header">
+        <span class="version-pill two">版本 2</span>
         <h2>{{ record2.fileName }}</h2>
         <p>{{ record2.jobTitle || '未填写岗位名' }}</p>
         <p class="date">{{ record2.createdAt | date: 'yyyy-MM-dd HH:mm' }}</p>
       </div>
 
-      <div class="scores">
-        <div class="score-item">
-          <span class="score-label">结构分</span>
-          <span class="score-value">{{ record2.result?.diagnosis?.structureScore || 0 }}</span>
-        </div>
-        <div class="score-item">
-          <span class="score-label">表达分</span>
-          <span class="score-value">{{ record2.result?.diagnosis?.expressionScore || 0 }}</span>
-        </div>
-        <div class="score-item">
-          <span class="score-label">匹配度</span>
-          <span class="score-value highlight">{{ record2.matchScore }}%</span>
-        </div>
+      <div class="score-hero">
+        <div class="score-main">{{ record2.matchScore }}%</div>
+        <div class="score-sub">匹配度</div>
       </div>
 
-      <div class="keywords">
-        <h4>已匹配关键词</h4>
-        <div class="tag-list">
-          <span class="tag matched" *ngFor="let k of record2.result?.matching?.matchedKeywords?.slice(0, 6)">{{ k }}</span>
-        </div>
+      <div class="pill-grid">
+        <div class="pill"><span>结构</span><strong>{{ record2.result?.diagnosis?.structureScore || 0 }}</strong></div>
+        <div class="pill"><span>表达</span><strong>{{ record2.result?.diagnosis?.expressionScore || 0 }}</strong></div>
+        <div class="pill"><span>ATS</span><strong>{{ record2.result?.diagnosis?.atsScore || 0 }}</strong></div>
+        <div class="pill"><span>完整</span><strong>{{ record2.result?.diagnosis?.completenessScore || 0 }}</strong></div>
       </div>
 
-      <div class="keywords missing" *ngIf="record2.result?.matching?.missingKeywords?.length">
-        <h4>缺失关键词</h4>
+      <section class="mini-block">
+        <h4>新增匹配关键词</h4>
+        <div class="tag-list" *ngIf="getAddedKeywords().length; else noAdded">
+          <span class="tag matched" *ngFor="let k of getAddedKeywords()">{{ k }}</span>
+        </div>
+        <ng-template #noAdded><p class="muted">相比版本 1 没有新增关键词</p></ng-template>
+      </section>
+
+      <section class="mini-block" *ngIf="record2.result?.matching?.missingKeywords?.length">
+        <h4>仍需补强</h4>
         <div class="tag-list">
           <span class="tag miss" *ngFor="let k of record2.result?.matching?.missingKeywords?.slice(0, 6)">{{ k }}</span>
         </div>
-      </div>
-    </div>
+      </section>
+
+      <section class="mini-block" *ngIf="record2.result?.optimization?.rewrittenHighlights?.length">
+        <h4>改写建议</h4>
+        <ul>
+          <li *ngFor="let item of record2.result?.optimization?.rewrittenHighlights?.slice(0, 4)">{{ item }}</li>
+        </ul>
+      </section>
+    </article>
   </div>
 
-  <div class="comparison-summary" *ngIf="record1 && record2">
+  <section class="difference-grid" *ngIf="record1 && record2">
+    <div class="difference-card">
+      <h3>共同命中关键词</h3>
+      <div class="tag-list" *ngIf="getCommonMatched().length; else noCommon">
+        <span class="tag matched" *ngFor="let k of getCommonMatched()">{{ k }}</span>
+      </div>
+      <ng-template #noCommon><p class="muted">暂无共同命中关键词</p></ng-template>
+    </div>
+
+    <div class="difference-card">
+      <h3>新增价值点</h3>
+      <ul *ngIf="getBetterHighlights().length; else noHighlights">
+        <li *ngFor="let item of getBetterHighlights()">{{ item }}</li>
+      </ul>
+      <ng-template #noHighlights><p class="muted">暂无新增优化点</p></ng-template>
+    </div>
+
+    <div class="difference-card">
+      <h3>减少的风险点</h3>
+      <div class="tag-list" *ngIf="getLostKeywords().length; else noLost">
+        <span class="tag miss" *ngFor="let k of getLostKeywords()">{{ k }}</span>
+      </div>
+      <ng-template #noLost><p class="muted">暂无减少项，说明两版关键词覆盖接近</p></ng-template>
+    </div>
+  </section>
+
+  <section class="comparison-summary" *ngIf="record1 && record2">
     <h3>对比总结</h3>
     <div class="summary-grid">
       <div class="summary-item">
-        <span class="summary-label">匹配度</span>
+        <span class="summary-label">结论</span>
         <span class="summary-diff" [class]="getScoreClass(record1.matchScore, record2.matchScore)">
-          {{ record1.fileName }} {{ getScoreDiff(record1.matchScore, record2.matchScore) }}%
+          {{ getWinner(record1.matchScore, record2.matchScore) }}
         </span>
       </div>
       <div class="summary-item">
-        <span class="summary-label">结构分</span>
-        <span class="summary-diff" [class]="getScoreClass(record1.result?.diagnosis?.structureScore, record2.result?.diagnosis?.structureScore)">
-          {{ getScoreDiff(record1.result?.diagnosis?.structureScore, record2.result?.diagnosis?.structureScore) }}
+        <span class="summary-label">匹配度变化</span>
+        <span class="summary-diff" [class]="getScoreClass(record1.matchScore, record2.matchScore)">
+          {{ getImprovement(record2.matchScore, record1.matchScore) }}
         </span>
       </div>
       <div class="summary-item">
-        <span class="summary-label">表达分</span>
-        <span class="summary-diff" [class]="getScoreClass(record1.result?.diagnosis?.expressionScore, record2.result?.diagnosis?.expressionScore)">
-          {{ getScoreDiff(record1.result?.diagnosis?.expressionScore, record2.result?.diagnosis?.expressionScore) }}
+        <span class="summary-label">ATS 变化</span>
+        <span class="summary-diff" [class]="getScoreClass(record1.result?.diagnosis?.atsScore, record2.result?.diagnosis?.atsScore)">
+          {{ getImprovement(record2.result?.diagnosis?.atsScore, record1.result?.diagnosis?.atsScore) }}
         </span>
       </div>
     </div>
-  </div>
+  </section>
 </div>
 
 <div class="page compare-page" *ngIf="loading">
-  <div class="loading">加载中...</div>
+  <div class="loading">正在加载两份版本的分析结果…</div>
 </div>
 
 <div class="page compare-page" *ngIf="error">

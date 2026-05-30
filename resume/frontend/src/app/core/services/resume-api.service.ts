@@ -16,11 +16,13 @@ export class ResumeApiService {
     return this.http.post<AnalysisResult>(`${this.apiBaseUrl}/api/analyze`, formData);
   }
 
-  getHistory(page = 1, pageSize = 10, favoritesOnly = false): Observable<PaginatedResponse> {
-    const params = new HttpParams()
+  getHistory(page = 1, pageSize = 10, favoritesOnly = false, search = '', minScore = 0): Observable<PaginatedResponse> {
+    let params = new HttpParams()
       .set('page', page.toString())
       .set('pageSize', pageSize.toString())
       .set('favorites', favoritesOnly ? '1' : '0');
+    if (search.trim()) params = params.set('search', search.trim());
+    if (minScore > 0) params = params.set('minScore', minScore.toString());
     return this.http.get<PaginatedResponse>(`${this.apiBaseUrl}/api/history`, { params });
   }
 
@@ -33,11 +35,7 @@ export class ResumeApiService {
   }
 
   toggleFavorite(id: number): Observable<{ isFavorite: boolean }> {
-    return this.http.post<{ isFavorite: boolean }>(
-      `${this.apiBaseUrl}/api/history/${id}/favorite`,
-      {},
-      { withCredentials: true }
-    );
+    return this.http.post<{ isFavorite: boolean }>(`${this.apiBaseUrl}/api/history/${id}/favorite`, {}, { withCredentials: true });
   }
 
   getDashboard(): Observable<DashboardStats> {

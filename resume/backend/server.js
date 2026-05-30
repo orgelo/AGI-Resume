@@ -89,7 +89,16 @@ app.get('/health', (_req, res) => {
 });
 
 app.get('/api/dashboard', (_req, res) => {
-  if (!db) return res.json({ totalAnalyses: 0, avgMatchScore: 0, avgStructureScore: 0, recentCount: 0 });
+  if (!db)
+    return res.json({
+      totalAnalyses: 0,
+      avgMatchScore: 0,
+      avgStructureScore: 0,
+      recentCount: 0,
+      weeklyData: [],
+      bestAnalysis: null,
+      topMissingKeywords: [],
+    });
   res.json(getDashboard(db));
 });
 
@@ -99,7 +108,9 @@ app.get('/api/history', (req, res) => {
   const pageSize = Math.min(50, Math.max(5, Number(req.query.pageSize) || 10));
   const offset = (page - 1) * pageSize;
   const favoritesOnly = req.query.favorites === '1';
-  const result = listHistoryPaginated(db, page, pageSize, offset, favoritesOnly);
+  const search = String(req.query.search || '').trim();
+  const minScore = Math.max(0, Number(req.query.minScore) || 0);
+  const result = listHistoryPaginated(db, page, pageSize, offset, favoritesOnly, search, minScore);
   res.json(result);
 });
 

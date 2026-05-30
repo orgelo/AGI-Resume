@@ -29,16 +29,13 @@ export class AnalyzePage implements OnInit {
   analysis: AnalysisResult | null = null;
 
   ngOnInit() {
-    this.http
-      .get<{ ok: boolean }>('http://localhost:3000/health', { responseType: 'json' })
-      .subscribe({
-        next: () => (this.backendOk = true),
-        error: () => {
-          this.backendOk = false;
-          this.errorMessage =
-            '无法连接后端 http://localhost:3000 ，请先在 backend 目录执行 npm.cmd run dev';
-        },
-      });
+    this.http.get<{ ok: boolean }>('http://localhost:3000/health').subscribe({
+      next: () => (this.backendOk = true),
+      error: () => {
+        this.backendOk = false;
+        this.errorMessage = '无法连接后端 http://localhost:3000 ，请先在 backend 目录执行 npm.cmd run dev';
+      },
+    });
   }
 
   onFileChange(event: Event) {
@@ -76,9 +73,7 @@ export class AnalyzePage implements OnInit {
 
     const isPdf = this.file.name.toLowerCase().endsWith('.pdf');
     this.loading = true;
-    this.loadingHint = isPdf
-      ? '扫描版 PDF 较慢（约 1～3 分钟），请耐心等待…'
-      : '正在分析简历（约 10～30 秒）…';
+    this.loadingHint = isPdf ? '扫描版 PDF 较慢（约 1～3 分钟），请耐心等待…' : '正在分析简历（约 10～30 秒）…';
 
     this.api
       .analyze(this.file, this.jobDescription, this.jobTitle)
@@ -86,12 +81,7 @@ export class AnalyzePage implements OnInit {
         timeout(190000),
         catchError((err) => {
           if (err?.name === 'TimeoutError') {
-            return throwError(
-              () =>
-                new Error(
-                  '请求超时。PDF 请改传 DOCX 试一次，或检查 backend 终端是否有报错。'
-                )
-            );
+            return throwError(() => new Error('请求超时。PDF 请改传 DOCX 试一次，或检查 backend 终端是否有报错。'));
           }
           return throwError(() => err);
         }),
@@ -109,10 +99,7 @@ export class AnalyzePage implements OnInit {
           }
         },
         error: (err) => {
-          this.errorMessage =
-            err?.error?.error ||
-            err?.message ||
-            '请求失败：请确认 backend 已启动且 API Key 有效';
+          this.errorMessage = err?.error?.error || err?.message || '请求失败：请确认 backend 已启动且 API Key 有效';
         },
       });
   }

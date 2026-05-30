@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { normalizeAnalysisResult } = require('../services/analysis.service');
 
 let Database;
 try {
@@ -53,8 +54,9 @@ function saveAnalysis(db, payload) {
     payload.resumeText
   );
 
-  const d = payload.result?.diagnosis || {};
-  const m = payload.result?.matching || {};
+  const normalizedResult = normalizeAnalysisResult('', payload.result || {});
+  const d = normalizedResult.diagnosis || {};
+  const m = normalizedResult.matching || {};
   const insertAnalysis = db.prepare(`
     INSERT INTO analyses (resume_id, job_id, structure_score, expression_score, quant_score, match_score, result_json)
     VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -66,7 +68,7 @@ function saveAnalysis(db, payload) {
     d.expressionScore ?? 0,
     d.quantScore ?? 0,
     m.matchScore ?? 0,
-    JSON.stringify(payload.result)
+    JSON.stringify(normalizedResult)
   );
 
   const insertKw = db.prepare(
@@ -98,36 +100,40 @@ function listHistory(db) {
   return result;
 }
 
-function listHistoryPaginated(db, page, pageSize, offset, favoritesOnly = false) {
-  let total, list;
-  if (favoritesOnly) {
-    total = db.prepare('SELECT COUNT(*) AS c FROM analyses WHERE is_favorite = 1').get().c;
-    list = db
-      .prepare(
-        `SELECT a.id, rf.file_name AS fileName, jp.title AS jobTitle,
-                a.match_score AS matchScore, a.structure_score AS structureScore,
-                a.is_favorite AS isFavorite, a.created_at AS createdAt
-         FROM analyses a
-         JOIN resume_files rf ON rf.id = a.resume_id
-         JOIN job_posts jp ON jp.id = a.job_id
-         WHERE a.is_favorite = 1
-         ORDER BY a.id DESC LIMIT ? OFFSET ?`
-      )
-      .all(pageSize, offset);
-  } else {
-    total = db.prepare('SELECT COUNT(*) AS c FROM analyses').get().c;
-    list = db
-      .prepare(
-        `SELECT a.id, rf.file_name AS fileName, jp.title AS jobTitle,
-                a.match_score AS matchScore, a.structure_score AS structureScore,
-                a.is_favorite AS isFavorite, a.created_at AS createdAt
-         FROM analyses a
-         JOIN resume_files rf ON rf.id = a.resume_id
-         JOIN job_posts jp ON jp.id = a.job_id
-         ORDER BY a.id DESC LIMIT ? OFFSET ?`
-      )
-      .all(pageSize, offset);
+function listHistoryPaginated(db, page, pageSize, offset, favoritesOnly = false, search = '', minScore = 0) {
+  const where = [];
+  const params = [];
+  if (favoritesOnly) where.push('a.is_favorite = 1');
+  if (search) {
+    where.push('(rf.file_name LIKE ? OR jp.title LIKE ? OR jp.description LIKE ?)');
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
   }
+  if (minScore > 0) {
+    where.push('a.match_score >= ?');
+    params.push(minScore);
+  }
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  const total = db
+    .prepare(
+      `SELECT COUNT(*) AS c
+       FROM analyses a
+       JOIN resume_files rf ON rf.id = a.resume_id
+       JOIN job_posts jp ON jp.id = a.job_id
+       ${whereSql}`
+    )
+    .get(...params).c;
+  const list = db
+    .prepare(
+      `SELECT a.id, rf.file_name AS fileName, jp.title AS jobTitle,
+              a.match_score AS matchScore, a.structure_score AS structureScore,
+              a.is_favorite AS isFavorite, a.created_at AS createdAt
+       FROM analyses a
+       JOIN resume_files rf ON rf.id = a.resume_id
+       JOIN job_posts jp ON jp.id = a.job_id
+       ${whereSql}
+       ORDER BY a.id DESC LIMIT ? OFFSET ?`
+    )
+    .all(...params, pageSize, offset);
   return { list, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
 }
 
@@ -177,6 +183,24 @@ function getDashboard(db) {
       `SELECT COUNT(*) AS c FROM analyses WHERE datetime(created_at) >= datetime('now', '-7 days')`
     )
     .get().c;
+  const best = db
+    .prepare(
+      `SELECT a.id, rf.file_name AS fileName, jp.title AS jobTitle, a.match_score AS matchScore
+       FROM analyses a
+       JOIN resume_files rf ON rf.id = a.resume_id
+       JOIN job_posts jp ON jp.id = a.job_id
+       ORDER BY a.match_score DESC, a.id DESC LIMIT 1`
+    )
+    .get();
+  const topMissingKeywords = db
+    .prepare(
+      `SELECT keyword, COUNT(*) AS count
+       FROM keywords
+       WHERE match_type = 'missing'
+       GROUP BY keyword
+       ORDER BY count DESC, keyword ASC LIMIT 10`
+    )
+    .all();
 
   const weekly = db
     .prepare(
@@ -213,6 +237,8 @@ function getDashboard(db) {
     avgStructureScore: avg.s || 0,
     recentCount: recent,
     weeklyData: result,
+    bestAnalysis: best || null,
+    topMissingKeywords,
   };
 }
 

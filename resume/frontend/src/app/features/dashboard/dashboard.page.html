@@ -6,51 +6,28 @@
 
   <div class="stats-grid">
     <div class="stat-card">
-      <div class="stat-icon blue">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 3v18h18"></path>
-          <path d="M18 17V9"></path>
-          <path d="M13 17V5"></path>
-          <path d="M8 17v-3"></path>
-        </svg>
-      </div>
+      <div class="stat-icon blue"></div>
       <div class="stat-content">
         <span class="stat-value">{{ stats?.totalAnalyses || 0 }}</span>
         <span class="stat-label">总分析次数</span>
       </div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon green">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <path d="M12 6v6l4 2"></path>
-        </svg>
-      </div>
+      <div class="stat-icon green"></div>
       <div class="stat-content">
         <span class="stat-value">{{ avgMatchScoreDisplay }}%</span>
         <span class="stat-label">平均匹配度</span>
       </div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon orange">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
-          <line x1="16" y1="13" x2="8" y2="13"></line>
-          <line x1="16" y1="17" x2="8" y2="17"></line>
-        </svg>
-      </div>
+      <div class="stat-icon orange"></div>
       <div class="stat-content">
         <span class="stat-value">{{ avgStructureScoreDisplay }}%</span>
         <span class="stat-label">平均结构分</span>
       </div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon purple">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-        </svg>
-      </div>
+      <div class="stat-icon purple"></div>
       <div class="stat-content">
         <span class="stat-value">{{ stats?.recentCount || 0 }}</span>
         <span class="stat-label">本周分析</span>
@@ -92,6 +69,26 @@
           <span class="bar-label">{{ day.label }}</span>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <h3>最佳分析</h3>
+      <p *ngIf="stats?.bestAnalysis; else noBest">
+        {{ stats?.bestAnalysis?.fileName }} · {{ stats?.bestAnalysis?.jobTitle }} · {{ stats?.bestAnalysis?.matchScore }}%
+      </p>
+      <ng-template #noBest><p>暂无数据</p></ng-template>
+    </div>
+
+    <div class="info-card">
+      <h3>高频缺失关键词</h3>
+      <div class="keyword-list" *ngIf="stats?.topMissingKeywords?.length; else noKeywords">
+        <span class="keyword-item" *ngFor="let item of stats?.topMissingKeywords">
+          {{ item.keyword }} <small>{{ item.count }}</small>
+        </span>
+      </div>
+      <ng-template #noKeywords><p>暂无数据</p></ng-template>
     </div>
   </div>
 

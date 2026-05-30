@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ResumeApiService } from '../../core/services/resume-api.service';
 import { AnalysisRecord, PaginatedResponse } from '../../core/models/analysis.model';
@@ -9,7 +10,7 @@ import { ScoreColorPipe } from '../../shared/pipes/score-color.pipe';
 @Component({
   selector: 'app-history-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, TruncatePipe, ScoreColorPipe],
+  imports: [CommonModule, FormsModule, RouterLink, TruncatePipe, ScoreColorPipe],
   templateUrl: './history.page.html',
   styleUrl: './history.page.scss',
 })
@@ -21,6 +22,8 @@ export class HistoryPage implements OnInit {
   records: AnalysisRecord[] = [];
   error = '';
   loading = false;
+  searchText = '';
+  minScore = 0;
 
   currentPage = 1;
   pageSize = 10;
@@ -36,7 +39,7 @@ export class HistoryPage implements OnInit {
   loadHistory(page = 1) {
     this.loading = true;
     this.currentPage = page;
-    this.api.getHistory(page, this.pageSize, this.favoritesOnly).subscribe({
+    this.api.getHistory(page, this.pageSize, this.favoritesOnly, this.searchText, this.minScore).subscribe({
       next: (res: PaginatedResponse) => {
         this.records = res.list;
         this.total = res.total;

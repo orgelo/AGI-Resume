@@ -15,17 +15,29 @@
       <app-score-ring label="匹配" [score]="analysis.matching?.matchScore" />
     </div>
 
-    <section class="block">
-      <h3>智能诊断</h3>
-      <p><b>结构建议：</b>{{ analysis.diagnosis?.recommendations?.structure?.join('；') || '—' }}</p>
-      <p><b>表达建议：</b>{{ analysis.diagnosis?.recommendations?.expression?.join('；') || '—' }}</p>
-      <p><b>量化建议：</b>{{ analysis.diagnosis?.recommendations?.quant?.join('；') || '—' }}</p>
+    <section class="block two-col">
+      <div>
+        <h3>智能诊断</h3>
+        <p><b>结构建议：</b>{{ analysis.diagnosis?.recommendations?.structure?.join('；') || '—' }}</p>
+        <p><b>表达建议：</b>{{ analysis.diagnosis?.recommendations?.expression?.join('；') || '—' }}</p>
+        <p><b>量化建议：</b>{{ analysis.diagnosis?.recommendations?.quant?.join('；') || '—' }}</p>
+        <p><b>ATS 建议：</b>{{ analysis.diagnosis?.recommendations?.ats?.join('；') || '—' }}</p>
+      </div>
+      <div>
+        <p><b>ATS 兼容：</b>{{ analysis.diagnosis?.atsScore ?? '—' }}</p>
+        <p><b>完整性：</b>{{ analysis.diagnosis?.completenessScore ?? '—' }}</p>
+        <p><b>缺失部分：</b>{{ analysis.diagnosis?.missingSections?.join('、') || '—' }}</p>
+        <p><b>风险提示：</b>{{ analysis.diagnosis?.riskWarnings?.join('；') || '—' }}</p>
+      </div>
     </section>
 
     <section class="block">
       <h3>岗位匹配</h3>
       <p>已匹配关键词 {{ analysis.matching?.matchedKeywords | keywordCount }} 个</p>
       <p><b>目标建议：</b>{{ analysis.matching?.targetedAdvice?.join('；') || '—' }}</p>
+      <div class="tags" *ngIf="analysis.matching?.jdKeywords?.required?.length">
+        <span class="tag req" *ngFor="let k of analysis.matching?.jdKeywords?.required">{{ k }}</span>
+      </div>
       <div class="tags" *ngIf="analysis.matching?.missingKeywords?.length">
         <span class="tag miss" *ngFor="let k of analysis.matching?.missingKeywords?.slice(0, 8)">{{ k }}</span>
       </div>
@@ -36,6 +48,29 @@
       <ul>
         <li *ngFor="let item of (analysis.optimization?.rewrittenHighlights ?? []).slice(0, 6)">{{ item }}</li>
       </ul>
+      <div class="before-after" *ngIf="analysis.optimization?.beforeAfter?.length">
+        <div class="ba-item" *ngFor="let item of analysis.optimization?.beforeAfter?.slice(0, 3)">
+          <p><b>原文：</b>{{ item.before }}</p>
+          <p><b>改写：</b>{{ item.after }}</p>
+          <p><b>理由：</b>{{ item.reason }}</p>
+        </div>
+      </div>
+      <p class="draft" *ngIf="analysis.optimization?.fullDraft"><b>完整草稿：</b>{{ analysis.optimization?.fullDraft }}</p>
+    </section>
+
+    <section class="block">
+      <h3>面试题建议</h3>
+      <p><b>技术题：</b>{{ analysis.interview?.technicalQuestions?.join('；') || '—' }}</p>
+      <p><b>项目题：</b>{{ analysis.interview?.projectQuestions?.join('；') || '—' }}</p>
+      <p><b>行为题：</b>{{ analysis.interview?.behaviorQuestions?.join('；') || '—' }}</p>
+      <p><b>追问风险：</b>{{ analysis.interview?.riskQuestions?.join('；') || '—' }}</p>
+    </section>
+
+    <section class="block">
+      <h3>职业建议</h3>
+      <p><b>推荐岗位：</b>{{ analysis.career?.recommendedRoles?.join('、') || '—' }}</p>
+      <p><b>等级判断：</b>{{ analysis.career?.levelAssessment || '—' }}</p>
+      <p><b>技能缺口：</b>{{ analysis.career?.skillGaps?.join('、') || '—' }}</p>
     </section>
   </ng-container>
 </div>
