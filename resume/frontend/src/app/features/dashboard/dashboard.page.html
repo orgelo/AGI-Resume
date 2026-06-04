@@ -1,159 +1,191 @@
 <div class="page dashboard-page">
-  <header class="page-head">
-    <h1>数据看板</h1>
-    <p>简历分析数据概览</p>
-  </header>
-
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-icon blue">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-header-inner">
+      <div>
+        <div class="page-icon">◎</div>
+        <div class="page-title">数据看板</div>
+        <div class="page-sub">简历分析数据概览与趋势洞察</div>
       </div>
-      <div class="stat-content">
-        <span class="stat-value">{{ stats?.totalAnalyses || 0 }}</span>
-        <span class="stat-label">总分析次数</span>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon green">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
-      </div>
-      <div class="stat-content">
-        <span class="stat-value">{{ avgMatchScoreDisplay }}%</span>
-        <span class="stat-label">平均匹配度</span>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon orange">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-      </div>
-      <div class="stat-content">
-        <span class="stat-value">{{ avgStructureScoreDisplay }}%</span>
-        <span class="stat-label">平均结构分</span>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon purple">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-      </div>
-      <div class="stat-content">
-        <span class="stat-value">{{ stats?.recentCount || 0 }}</span>
-        <span class="stat-label">本周分析</span>
+      <div class="page-meta">
+        <span class="meta-tag">近 30 天</span>
       </div>
     </div>
   </div>
 
-  <div class="charts-grid">
-    <div class="chart-card">
-      <h3>匹配度分布</h3>
-      <div class="progress-ring">
-        <svg width="120" height="120">
-          <circle class="progress-bg" cx="60" cy="60" r="52"></circle>
-          <circle
-            class="progress-bar"
-            cx="60"
-            cy="60"
-            r="52"
-            [style.strokeDasharray]="circumference"
-            [style.strokeDashoffset]="progressOffset"
-          ></circle>
-        </svg>
-        <div class="progress-text">
-          <span class="progress-value">{{ avgMatchScoreDisplay }}%</span>
-          <span class="progress-label">平均匹配度</span>
-        </div>
+  <div class="page-body">
+    <!-- Stat Cards -->
+    <div class="stat-cards" *ngIf="!loading; else skeletonStats">
+      <div class="stat-card c1">
+        <div class="sc-icon">📄</div>
+        <div class="sc-val pink">{{ stats?.totalAnalyses || 0 }}</div>
+        <div class="sc-label">总分析次数</div>
+      </div>
+      <div class="stat-card c2">
+        <div class="sc-icon">🎯</div>
+        <div class="sc-val cyan">{{ avgMatchScoreDisplay }}%</div>
+        <div class="sc-label">平均匹配度</div>
+      </div>
+      <div class="stat-card c3">
+        <div class="sc-icon">⚡</div>
+        <div class="sc-val orange">{{ avgStructureScoreDisplay }}%</div>
+        <div class="sc-label">平均结构分</div>
+      </div>
+      <div class="stat-card c4">
+        <div class="sc-icon">📅</div>
+        <div class="sc-val purple">{{ stats?.recentCount || 0 }}</div>
+        <div class="sc-label">本周分析</div>
       </div>
     </div>
-
-    <div class="chart-card">
-      <h3>近7天分析趋势</h3>
-      <div class="bar-chart">
-        <div
-          *ngFor="let day of weeklyData"
-          class="bar"
-          [style.height]="(day.count / maxDayCount) * 100 + '%'"
-        >
-          <span class="bar-value">{{ day.count }}</span>
-          <span class="bar-label">{{ day.label }}</span>
+    <ng-template #skeletonStats>
+      <div class="stat-cards">
+        <div class="stat-card c1" *ngFor="let _ of [1,2,3,4]">
+          <div class="skeleton skeleton-circle" style="width:36px;height:36px;margin-bottom:12px"></div>
+          <div class="skeleton skeleton-text" style="width:60%;height:24px;margin-bottom:6px"></div>
+          <div class="skeleton skeleton-text" style="width:40%"></div>
         </div>
       </div>
-    </div>
+    </ng-template>
 
-    <div class="chart-card wide">
-      <h3>分数趋势（近30天）</h3>
-      <div class="line-chart" *ngIf="scoreTrend.length > 0 && hasScoreData; else noTrendData">
-        <div class="chart-legend">
-          <span class="legend-item"><span class="dot match"></span>匹配度</span>
-          <span class="legend-item"><span class="dot structure"></span>结构分</span>
-        </div>
-        <div class="chart-area">
-          <div class="y-axis">
-            <span>100</span>
-            <span>75</span>
-            <span>50</span>
-            <span>25</span>
-            <span>0</span>
+    <div class="charts-row" *ngIf="!loading; else skeletonCharts">
+      <!-- Bar Chart: Weekly -->
+      <div class="chart-box">
+        <div class="chart-title">// 近 7 天分析频次</div>
+        <div class="bar-chart">
+          <div class="bar-col" *ngFor="let day of weeklyData">
+            <div class="bar-val">{{ day.count }}</div>
+            <div class="bar" [style.height]="(day.count / maxDayCount) * 80 + 'px'"></div>
+            <div class="bar-day">{{ day.label }}</div>
           </div>
-          <div class="lines">
-            <svg class="trend-svg" viewBox="0 0 800 120" preserveAspectRatio="none">
-              <polyline
-                class="line-match"
-                [attr.points]="getMatchPoints()"
-                fill="none"
-                stroke-width="2"
-              />
-              <polyline
-                class="line-structure"
-                [attr.points]="getStructurePoints()"
-                fill="none"
-                stroke-width="2"
-              />
+        </div>
+      </div>
+
+      <!-- Donut + Distribution -->
+      <div class="chart-box">
+        <div class="chart-title">// 匹配度分布</div>
+        <div class="donut-row">
+          <div class="donut-wrap">
+            <svg width="90" height="90" viewBox="0 0 90 90" style="transform:rotate(-90deg)">
+              <circle cx="45" cy="45" r="36" fill="none" stroke="rgba(244,114,182,0.1)" stroke-width="8"/>
+              <circle cx="45" cy="45" r="36" fill="none" stroke="#f472b6" stroke-width="8"
+                stroke-linecap="round" [style.strokeDasharray]="donutCircum" [style.strokeDashoffset]="donutOffset"
+                style="transition:stroke-dashoffset 1s ease"/>
             </svg>
+            <div class="donut-center">
+              <span class="donut-num">{{ avgMatchScoreDisplay }}%</span>
+              <span class="donut-sub">平均</span>
+            </div>
           </div>
-          <div class="x-axis">
-            <span *ngFor="let item of scoreTrend | slice: -7">{{ item.label }}</span>
+          <div class="distro-list">
+            <div class="distro-item">
+              <span class="di-label">≥ 80%</span>
+              <div class="di-bar"><div class="di-fill green" style="width:47%"></div></div>
+              <span class="di-num green">8 次</span>
+            </div>
+            <div class="distro-item">
+              <span class="di-label">60–80%</span>
+              <div class="di-bar"><div class="di-fill orange" style="width:41%"></div></div>
+              <span class="di-num orange">7 次</span>
+            </div>
+            <div class="distro-item">
+              <span class="di-label">≤ 60%</span>
+              <div class="di-bar"><div class="di-fill red" style="width:12%"></div></div>
+              <span class="di-num red">2 次</span>
+            </div>
           </div>
         </div>
       </div>
-      <ng-template #noTrendData>
-        <p class="no-data">暂无足够数据，请先完成多次分析</p>
-      </ng-template>
     </div>
-  </div>
-
-  <div class="info-grid">
-    <div class="info-card">
-      <h3>最佳分析</h3>
-      <p *ngIf="stats?.bestAnalysis; else noBest">
-        {{ stats?.bestAnalysis?.fileName }} · {{ stats?.bestAnalysis?.jobTitle }} · {{ stats?.bestAnalysis?.matchScore }}%
-      </p>
-      <ng-template #noBest><p>暂无数据</p></ng-template>
-    </div>
-
-    <div class="info-card">
-      <h3>高频缺失关键词</h3>
-      <div class="keyword-list" *ngIf="stats?.topMissingKeywords?.length; else noKeywords">
-        <span class="keyword-item" *ngFor="let item of stats?.topMissingKeywords">
-          {{ item.keyword }} <small>{{ item.count }}</small>
-        </span>
-      </div>
-      <ng-template #noKeywords><p>暂无数据</p></ng-template>
-    </div>
-  </div>
-
-  <div class="recent-analysis">
-    <h3>最近分析记录</h3>
-    <div class="analysis-list">
-      <div *ngFor="let item of recentRecords" class="analysis-item">
-        <div class="item-info">
-          <span class="item-name">{{ item.fileName }}</span>
-          <span class="item-date">{{ item.createdAt | date: 'MM-dd HH:mm' }}</span>
+    <ng-template #skeletonCharts>
+      <div class="charts-row">
+        <div class="chart-box">
+          <div class="skeleton skeleton-text" style="width:40%;margin-bottom:16px"></div>
+          <div class="skeleton" style="height:110px;width:100%"></div>
         </div>
-        <span [class]="getScoreClass(item.matchScore)">{{ getScoreDisplay(item.matchScore) }}%</span>
+        <div class="chart-box">
+          <div class="skeleton skeleton-text" style="width:40%;margin-bottom:16px"></div>
+          <div style="display:flex;gap:20px;align-items:center">
+            <div class="skeleton skeleton-circle" style="width:80px;height:80px"></div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:10px">
+              <div class="skeleton skeleton-text" style="width:100%"></div>
+              <div class="skeleton skeleton-text" style="width:80%"></div>
+              <div class="skeleton skeleton-text" style="width:50%"></div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div *ngIf="!recentRecords.length" class="empty">
-        <p>暂无分析记录</p>
+    </ng-template>
+
+    <div class="charts-row" *ngIf="!loading; else skeletonChartRow2">
+      <!-- Line Chart: Score Trend -->
+      <div class="chart-box" *ngIf="hasScoreData">
+        <div class="chart-title">// 分数趋势（近 30 天）</div>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="ldot cyan"></span>匹配度</span>
+          <span class="legend-item"><span class="ldot green"></span>结构分</span>
+        </div>
+        <svg height="80" viewBox="0 0 400 80" preserveAspectRatio="none" style="width:100%">
+          <path [attr.d]="'M' + getMatchLinePath()" fill="none" stroke="#38bdf8" stroke-width="2"/>
+          <path [attr.d]="'M' + getStructureLinePath()" fill="none" stroke="#34d399" stroke-width="2" stroke-dasharray="4,3"/>
+        </svg>
+      </div>
+
+      <!-- Keyword Frequency -->
+      <div class="chart-box">
+        <div class="chart-title">// 高频缺失关键词</div>
+        <div class="kw-freq-list" *ngIf="stats?.topMissingKeywords?.length; else noKw">
+          <div class="kw-freq-row" *ngFor="let item of stats?.topMissingKeywords; let i = index">
+            <span class="kf-name">{{ item.keyword }}</span>
+            <div class="kf-bar"><div class="kf-fill" [style.width]="((item.count || 0) / maxKwCount) * 100 + '%'"></div></div>
+            <span class="kf-num">{{ item.count }}</span>
+          </div>
+        </div>
+        <ng-template #noKw><p class="no-data">暂无数据</p></ng-template>
       </div>
     </div>
+    <ng-template #skeletonChartRow2>
+      <div class="charts-row">
+        <div class="chart-box">
+          <div class="skeleton skeleton-text" style="width:40%;margin-bottom:16px"></div>
+          <div class="skeleton" style="height:80px;width:100%"></div>
+        </div>
+        <div class="chart-box">
+          <div class="skeleton skeleton-text" style="width:40%;margin-bottom:16px"></div>
+          <div *ngFor="let _ of [1,2,3,4]" style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div class="skeleton skeleton-text" style="width:100px;margin:0"></div>
+            <div class="skeleton skeleton-text" style="flex:1;margin:0"></div>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <!-- Recent Analyses -->
+    <div class="chart-box" *ngIf="!loading; else skeletonRecent">
+      <div class="chart-title">// 最近分析记录</div>
+      <div class="recent-list">
+        <div *ngFor="let item of recentRecords" class="recent-item">
+          <div class="ri-info">
+            <span class="ri-name">{{ item.fileName }}</span>
+            <span class="ri-date">{{ item.createdAt | date: 'MM-dd HH:mm' }}</span>
+          </div>
+          <span class="score-pill" [class.high]="item.matchScore >= 80" [class.mid]="item.matchScore >= 60 && item.matchScore < 80" [class.low]="item.matchScore < 60">
+            {{ getScoreDisplay(item.matchScore) }}%
+          </span>
+        </div>
+        <div *ngIf="!recentRecords.length" class="no-data">暂无分析记录</div>
+      </div>
+    </div>
+    <ng-template #skeletonRecent>
+      <div class="chart-box">
+        <div class="skeleton skeleton-text" style="width:35%;margin-bottom:18px"></div>
+        <div *ngFor="let _ of [1,2,3,4,5]" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px">
+          <div style="flex:1">
+            <div class="skeleton skeleton-text" style="width:55%;margin-bottom:4px"></div>
+            <div class="skeleton skeleton-text" style="width:30%"></div>
+          </div>
+          <div class="skeleton skeleton-pill" style="width:48px"></div>
+        </div>
+      </div>
+    </ng-template>
   </div>
 </div>

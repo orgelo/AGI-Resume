@@ -1,85 +1,225 @@
 <div class="panel">
+  <!-- Empty / Loading / Error -->
   <div class="panel-empty" *ngIf="!analysis && !loading">
-    上传简历并输入 JD 后，点击「开始分析」。
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <p>上传简历并输入 JD，点击「开始分析」获取 AI 评估</p>
   </div>
-  <div class="panel-loading" *ngIf="loading">
-    <p>AI 正在诊断与匹配岗位…</p>
-    <p class="hint" *ngIf="loadingHint">{{ loadingHint }}</p>
-  </div>
-  <div class="panel-error" *ngIf="errorMessage && !loading">{{ errorMessage }}</div>
 
-  <ng-container *ngIf="analysis && !loading">
-    <div class="rings">
-      <app-score-ring label="结构" [score]="analysis.diagnosis?.structureScore" />
-      <app-score-ring label="表达" [score]="analysis.diagnosis?.expressionScore" />
-      <app-score-ring label="匹配" [score]="analysis.matching?.matchScore" />
+  <div class="panel-loading" *ngIf="loading">
+    <!-- Giant score skeleton -->
+    <div class="skeleton-loading-hero">
+      <div class="skeleton skeleton-circle" style="width:140px;height:140px;margin:0 auto 20px"></div>
+      <div class="skeleton skeleton-text" style="width:120px;margin:0 auto 12px;height:36px"></div>
     </div>
 
-    <section class="block two-col">
-      <div>
-        <h3>智能诊断</h3>
-        <p><b>结构建议：</b>{{ analysis.diagnosis?.recommendations?.structure?.join('；') || '—' }}</p>
-        <p><b>表达建议：</b>{{ analysis.diagnosis?.recommendations?.expression?.join('；') || '—' }}</p>
-        <p><b>量化建议：</b>{{ analysis.diagnosis?.recommendations?.quant?.join('；') || '—' }}</p>
-        <p><b>ATS 建议：</b>{{ analysis.diagnosis?.recommendations?.ats?.join('；') || '—' }}</p>
-      </div>
-      <div>
-        <p><b>ATS 兼容：</b>{{ analysis.diagnosis?.atsScore ?? '—' }}</p>
-        <p><b>完整性：</b>{{ analysis.diagnosis?.completenessScore ?? '—' }}</p>
-        <p><b>缺失部分：</b>{{ analysis.diagnosis?.missingSections?.join('、') || '—' }}</p>
-        <p><b>风险提示：</b>{{ analysis.diagnosis?.riskWarnings?.join('；') || '—' }}</p>
-      </div>
-    </section>
-
-    <section class="block">
-      <h3>岗位匹配</h3>
-      <p>已匹配关键词 {{ analysis.matching?.matchedKeywords | keywordCount }} 个</p>
-      <p><b>目标建议：</b>{{ analysis.matching?.targetedAdvice?.join('；') || '—' }}</p>
-      <div class="tags" *ngIf="analysis.matching?.jdKeywords?.required?.length">
-        <span class="tag req" *ngFor="let k of analysis.matching?.jdKeywords?.required">{{ k }}</span>
-      </div>
-      <div class="tags" *ngIf="analysis.matching?.missingKeywords?.length">
-        <span class="tag miss" *ngFor="let k of analysis.matching?.missingKeywords?.slice(0, 8)">{{ k }}</span>
-      </div>
-      <div class="keyword-tips" *ngIf="analysis.matching?.missingKeywords?.length">
-        <p class="tips-title">💡 关键词优化建议</p>
-        <ul class="tips-list">
-          <li>优先补充 <b>{{ getMissingKeywordsPreview() }}</b> 等高频要求的关键词</li>
-          <li>在简历的「工作经历」或「项目经验」中自然融入这些关键词</li>
-          <li>避免关键词堆砌，保持语句通顺专业</li>
-          <li>可参考 JD 中的技能要求列表，确保覆盖核心技能</li>
-        </ul>
-      </div>
-    </section>
-
-    <section class="block">
-      <h3>智能优化</h3>
-      <ul>
-        <li *ngFor="let item of (analysis.optimization?.rewrittenHighlights ?? []).slice(0, 6)">{{ item }}</li>
-      </ul>
-      <div class="before-after" *ngIf="analysis.optimization?.beforeAfter?.length">
-        <div class="ba-item" *ngFor="let item of analysis.optimization?.beforeAfter?.slice(0, 3)">
-          <p><b>原文：</b>{{ item.before }}</p>
-          <p><b>改写：</b>{{ item.after }}</p>
-          <p><b>理由：</b>{{ item.reason }}</p>
+    <!-- Two column skeleton -->
+    <div class="skeleton-loading-grid">
+      <div class="skeleton-loading-col">
+        <div class="skeleton skeleton-text" style="width:40%;margin-bottom:14px;height:14px"></div>
+        <div class="skeleton" style="width:100%;height:200px;border-radius:12px;margin-bottom:16px"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+          <div *ngFor="let _ of [1,2,3,4,5]" style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <div class="skeleton skeleton-circle" style="width:56px;height:56px"></div>
+            <div class="skeleton skeleton-text" style="width:30px;margin:0"></div>
+            <div class="skeleton skeleton-text" style="width:40px;margin:0;height:10px"></div>
+          </div>
         </div>
       </div>
-      <p class="draft" *ngIf="analysis.optimization?.fullDraft"><b>完整草稿：</b>{{ analysis.optimization?.fullDraft }}</p>
-    </section>
+      <div class="skeleton-loading-col">
+        <div class="skeleton skeleton-text" style="width:40%;margin-bottom:14px;height:14px"></div>
+        <div *ngFor="let _ of [1,2,3,4]" style="display:flex;gap:10px;margin-bottom:12px;padding:12px;background:var(--bg-card);border-radius:12px;border:1px solid var(--border-light)">
+          <div class="skeleton" style="width:32px;height:32px;border-radius:8px;flex-shrink:0"></div>
+          <div style="flex:1">
+            <div class="skeleton skeleton-text" style="width:50px;margin-bottom:6px;height:13px"></div>
+            <div class="skeleton skeleton-text" style="width:100%;margin-bottom:4px"></div>
+            <div class="skeleton skeleton-text" style="width:80%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <section class="block">
-      <h3>面试题建议</h3>
-      <p><b>技术题：</b>{{ analysis.interview?.technicalQuestions?.join('；') || '—' }}</p>
-      <p><b>项目题：</b>{{ analysis.interview?.projectQuestions?.join('；') || '—' }}</p>
-      <p><b>行为题：</b>{{ analysis.interview?.behaviorQuestions?.join('；') || '—' }}</p>
-      <p><b>追问风险：</b>{{ analysis.interview?.riskQuestions?.join('；') || '—' }}</p>
-    </section>
+    <!-- Bottom skeleton -->
+    <div class="skeleton" style="width:100%;height:100px;border-radius:12px;margin-top:18px"></div>
 
-    <section class="block">
-      <h3>职业建议</h3>
-      <p><b>推荐岗位：</b>{{ analysis.career?.recommendedRoles?.join('、') || '—' }}</p>
-      <p><b>等级判断：</b>{{ analysis.career?.levelAssessment || '—' }}</p>
-      <p><b>技能缺口：</b>{{ analysis.career?.skillGaps?.join('、') || '—' }}</p>
-    </section>
-  </ng-container>
+    <p class="loading-text">AI 正在分析你的简历...</p>
+    <p class="hint" *ngIf="loadingHint">{{ loadingHint }}</p>
+  </div>
+
+  <div class="panel-error" *ngIf="errorMessage && !loading">{{ errorMessage }}</div>
+
+  <!-- ========== Result ========== -->
+  <div class="panel-result" *ngIf="analysis && !loading">
+    <!-- TOP: Giant Score -->
+    <div class="hero-score">
+      <div class="hero-ring">
+        <svg width="140" height="140" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" fill="none" stroke="var(--border-light)" stroke-width="6"/>
+          <circle cx="50" cy="50" r="45" fill="none" [attr.stroke]="gradeColor" stroke-width="6"
+            stroke-linecap="round" [style.strokeDasharray]="ringCircum"
+            [style.strokeDashoffset]="dashScoreOffset" transform="rotate(-90 50 50)">
+          </circle>
+        </svg>
+        <div class="hero-center">
+          <span class="hero-num">{{ overallScore }}</span>
+          <span class="hero-grade" [style.color]="gradeColor">{{ gradeLabel }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MIDDLE: Two Column Layout -->
+    <div class="main-grid">
+      <!-- Left: Resume Overview -->
+      <div class="col-left">
+        <h3 class="section-title">技能概览</h3>
+
+        <!-- Radar Chart -->
+        <div class="radar-card">
+          <svg [attr.viewBox]="'0 0 ' + rSize + ' ' + rSize" class="radar-svg">
+            <!-- Grid rings -->
+            <polygon *ngFor="let l of [1,2,3,4,5]" [attr.points]="getRadarGridPoints(l)"
+              fill="none" stroke="var(--border-light)" stroke-width="0.5"/>
+            <!-- Axes -->
+            <line *ngFor="let d of radarDimensions; let i = index"
+              [attr.x1]="rCenter" [attr.y1]="rCenter"
+              [attr.x2]="getRadarLabelX(i)" [attr.y2]="getRadarLabelY(i)"
+              stroke="var(--border-light)" stroke-width="0.5"/>
+            <!-- Data area -->
+            <polygon [attr.points]="getRadarPoints()"
+              fill="rgba(139,92,246,0.18)" stroke="var(--primary-color)" stroke-width="1.5"
+              class="radar-area"/>
+            <!-- Dots -->
+            <circle *ngFor="let d of radarDimensions; let i = index"
+              [attr.cx]="getRadarDotX(i, d.score)"
+              [attr.cy]="getRadarDotY(i, d.score)"
+              r="3" fill="var(--primary-color)"/>
+            <!-- Labels -->
+            <text *ngFor="let d of radarDimensions; let i = index"
+              [attr.x]="getRadarLabelX(i)"
+              [attr.y]="getRadarLabelY(i)"
+              text-anchor="middle" dominant-baseline="middle"
+              class="radar-label">{{ d.label }}</text>
+          </svg>
+        </div>
+
+        <!-- Ring Charts - 5 dimensions -->
+        <div class="ring-grid">
+          <div class="ring-item" *ngFor="let d of radarDimensions">
+            <svg width="56" height="56" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="var(--border-light)" stroke-width="6"/>
+              <circle cx="50" cy="50" r="42" fill="none" [attr.stroke]="ringColor(d.score)" stroke-width="6"
+                stroke-linecap="round" [style.strokeDasharray]="264"
+                [style.strokeDashoffset]="264 - (264 * d.score) / 100"
+                transform="rotate(-90 50 50)" class="ring-animate"/>
+            </svg>
+            <span class="ring-num" [style.color]="ringColor(d.score)">{{ d.score }}</span>
+            <span class="ring-lbl">{{ d.label }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: AI Insights -->
+      <div class="col-right">
+        <h3 class="section-title">AI 洞察</h3>
+
+        <!-- ChatGPT-style cards -->
+        <div class="chat-cards">
+          <div class="chat-card" *ngFor="let card of insightCards; let i = index"
+            [style.animationDelay]="(i * 80) + 'ms'" [style.borderLeftColor]="card.color">
+            <div class="chat-avatar" [style.background]="card.color + '20'">
+              <span class="chat-icon">{{ card.roleIcon }}</span>
+            </div>
+            <div class="chat-body">
+              <div class="chat-role" [style.color]="card.color">{{ card.role }}</div>
+              <div class="chat-items">
+                <p *ngFor="let item of card.items">{{ item }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM: Additional Sections -->
+    <!-- Before/After -->
+    <div class="bottom-section" *ngIf="hasBeforeAfter">
+      <h3 class="section-title">修改前后对比</h3>
+      <div class="ba-grid">
+        <div class="ba-card" *ngFor="let item of beforeAfterItems; let i = index" [style.animationDelay]="(i*100)+'ms'">
+          <div class="ba-badge">修改 {{ i + 1 }}</div>
+          <div class="ba-pair">
+            <div class="ba-side original">
+              <span class="ba-label">原文</span>
+              <p>{{ item.before }}</p>
+            </div>
+            <div class="ba-arrow">→</div>
+            <div class="ba-side rewritten">
+              <span class="ba-label">优化</span>
+              <p>{{ item.after }}</p>
+            </div>
+          </div>
+          <p class="ba-reason">{{ item.reason }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Full Draft -->
+    <div class="bottom-section draft-section" *ngIf="hasFullDraft">
+      <h3 class="section-title">完整优化草稿</h3>
+      <div class="draft-content">{{ fullDraft }}</div>
+    </div>
+
+    <!-- Keywords Match -->
+    <div class="bottom-section" *ngIf="hasMissingKeywords || matchedKeywords.length">
+      <h3 class="section-title">关键词分析</h3>
+      <div class="kw-section">
+        <div class="kw-block matched" *ngIf="matchedKeywords.length">
+          <span class="kw-status">已匹配</span>
+          <div class="kw-tags">
+            <span class="kw-tag match" *ngFor="let k of matchedKeywords.slice(0, 10)">{{ k }}</span>
+          </div>
+        </div>
+        <div class="kw-block missing" *ngIf="hasMissingKeywords">
+          <span class="kw-status">建议补充</span>
+          <div class="kw-tags">
+            <span class="kw-tag miss" *ngFor="let k of missingKeywords.slice(0, 10)">{{ k }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interview Questions -->
+    <div class="bottom-section" *ngIf="hasInterviewQuestions">
+      <h3 class="section-title">面试预测</h3>
+      <div class="interview-grid">
+        <div class="int-card" *ngIf="technicalQuestions.length">
+          <h4>技术题</h4>
+          <p *ngFor="let q of technicalQuestions.slice(0, 3)">{{ q }}</p>
+        </div>
+        <div class="int-card" *ngIf="projectQuestions.length">
+          <h4>项目题</h4>
+          <p *ngFor="let q of projectQuestions.slice(0, 3)">{{ q }}</p>
+        </div>
+        <div class="int-card" *ngIf="behaviorQuestions.length">
+          <h4>行为题</h4>
+          <p *ngFor="let q of behaviorQuestions.slice(0, 3)">{{ q }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Career Advice -->
+    <div class="bottom-section" *ngIf="hasCareerAdvice">
+      <h3 class="section-title">职业建议</h3>
+      <div class="career-row">
+        <span class="career-badge" *ngIf="recommendedRoles.length">
+          推荐岗位：{{ recommendedRoles.join(' · ') }}
+        </span>
+        <span class="career-badge" *ngIf="levelAssessment">
+          等级：{{ levelAssessment }}
+        </span>
+        <span class="career-badge" *ngIf="skillGaps.length">
+          技能缺口：{{ skillGaps.join(' · ') }}
+        </span>
+      </div>
+    </div>
+  </div>
 </div>

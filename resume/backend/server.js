@@ -4,6 +4,9 @@ const multer = require('multer');
 const dotenv = require('dotenv');
 const { extractResumeText } = require('./services/ocr.service');
 const { analyzeResume, ocrImageToText } = require('./services/analysis.service');
+const { startInterview, chatInterview, evaluateInterview } = require('./services/interview.service');
+const { generateRoadmap } = require('./services/career-roadmap.service');
+const { tailorResume, buildResumeHtml, generatePDF, generateDOCX } = require('./services/tailor.service');
 const {
   initDb,
   saveAnalysis,
@@ -21,6 +24,7 @@ const {
   setAnalysisTags,
   addTagToAnalysis,
   removeTagFromAnalysis,
+  getLatestPreview,
 } = require('./db/database');
 
 dotenv.config();
@@ -92,8 +96,32 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 },
 });
 
+/* Multer 在 Windows 上对中文文件名可能用 latin1 解析，这里统一还原为 UTF-8 */
+function decodeUploadFilename(name) {
+  if (!name) return name;
+  // 如果包含典型的 latin1→utf8 乱码模式，进行转换
+  if (/[À-ÿ]/.test(name) || /[Â-Ê]/.test(name)) {
+    try {
+      const decoded = Buffer.from(name, 'latin1').toString('utf8');
+      // 检查解码后是否包含有效的中文字符
+      if (/[一-鿿]/.test(decoded)) return decoded;
+    } catch {}
+  }
+  return name;
+}
+
 app.get('/health', (_req, res) => {
   res.json({ ok: true, db: !!db });
+});
+
+app.get('/api/preview/latest', (_req, res) => {
+  if (!db) return res.json({ hasData: false });
+  try {
+    res.json(getLatestPreview(db));
+  } catch (err) {
+    console.error('[preview] 失败：', err?.message || err);
+    res.json({ hasData: false });
+  }
 });
 
 app.get('/api/dashboard', (_req, res) => {
@@ -160,6 +188,7 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
     const jobTitle = String(req.body?.jobTitle || '').trim();
     const file = req.file;
     if (!file) return res.status(400).json({ error: '缺少上传文件：file' });
+    file.originalname = decodeUploadFilename(file.originalname);
 
     console.log(`[analyze] 开始 file=${file.originalname} type=${file.mimetype}`);
 
@@ -256,6 +285,225 @@ app.post('/api/history/:id/tags/:tagId', (req, res) => {
 app.delete('/api/history/:id/tags/:tagId', (req, res) => {
   if (!db) return res.status(503).json({ error: '数据库未就绪' });
   res.json(removeTagFromAnalysis(db, Number(req.params.id), Number(req.params.tagId)));
+});
+
+// ========== 面试模拟 API ==========
+
+app.post('/api/interview/start', upload.single('file'), async (req, res) => {
+  try {
+    if (!ARK_API_KEY) {
+      return res.status(500).json({ error: '缺少 ARK_API_KEY，请在 backend/.env 配置' });
+    }
+
+    const jobDescription = String(req.body?.jobDescription || '').trim();
+    const jobTitle = String(req.body?.jobTitle || '').trim();
+    const file = req.file;
+    if (file) file.originalname = decodeUploadFilename(file.originalname);
+
+    let resumeText = String(req.body?.resumeText || '').trim();
+
+    if (file) {
+      console.log(`[interview] 提取简历文字 file=${file.originalname}`);
+      resumeText = await withTimeout(
+        extractResumeText(file, {
+          maxPages: MAX_PAGES_FOR_OCR,
+          ocrPageTimeoutMs: AI_TIMEOUT_MS,
+          ocrImageToText: (b64) => ocrImageToText(b64, aiDeps),
+        }),
+        ANALYZE_TIMEOUT_MS,
+        '简历文字提取'
+      );
+    }
+
+    if (!resumeText) {
+      return res.status(400).json({ error: '未能获取简历文字，请上传简历文件或输入简历内容' });
+    }
+
+    const result = await withTimeout(
+      startInterview({ resumeText, jobDescription }, aiDeps),
+      AI_TIMEOUT_MS,
+      '面试题生成'
+    );
+
+    res.json(result);
+  } catch (err) {
+    console.error('[interview/start] 失败：', err?.message || err);
+    res.status(500).json({ error: err?.message || String(err) });
+  }
+});
+
+app.post('/api/interview/chat', async (req, res) => {
+  try {
+    if (!ARK_API_KEY) {
+      return res.status(500).json({ error: '缺少 ARK_API_KEY' });
+    }
+
+    const { messages, questionPool, focusAreas } = req.body;
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: '缺少对话历史 messages' });
+    }
+
+    const result = await withTimeout(
+      chatInterview({ messages, questionPool, focusAreas }, aiDeps),
+      AI_TIMEOUT_MS,
+      '面试对话'
+    );
+
+    res.json(result);
+  } catch (err) {
+    console.error('[interview/chat] 失败：', err?.message || err);
+    res.status(500).json({ error: err?.message || String(err) });
+  }
+});
+
+app.post('/api/interview/evaluate', async (req, res) => {
+  try {
+    if (!ARK_API_KEY) {
+      return res.status(500).json({ error: '缺少 ARK_API_KEY' });
+    }
+
+    const { messages } = req.body;
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: '缺少对话历史 messages' });
+    }
+
+    const result = await withTimeout(
+      evaluateInterview({ messages }, aiDeps),
+      AI_TIMEOUT_MS,
+      '面试评估'
+    );
+
+    res.json(result);
+  } catch (err) {
+    console.error('[interview/evaluate] 失败：', err?.message || err);
+    res.status(500).json({ error: err?.message || String(err) });
+  }
+});
+
+// ========== 职业路线图 API ==========
+app.post('/api/career-roadmap', upload.single('file'), async (req, res) => {
+  try {
+    if (!ARK_API_KEY) {
+      return res.status(500).json({ error: '缺少 ARK_API_KEY，请在 backend/.env 配置' });
+    }
+
+    const targetRole = String(req.body?.targetRole || '').trim();
+    const targetCompany = String(req.body?.targetCompany || '').trim();
+    const file = req.file;
+    if (file) file.originalname = decodeUploadFilename(file.originalname);
+
+    let resumeText = String(req.body?.resumeText || '').trim();
+
+    if (file) {
+      console.log(`[roadmap] 提取简历文字 file=${file.originalname}`);
+      resumeText = await withTimeout(
+        extractResumeText(file, {
+          maxPages: MAX_PAGES_FOR_OCR,
+          ocrPageTimeoutMs: AI_TIMEOUT_MS,
+          ocrImageToText: (b64) => ocrImageToText(b64, aiDeps),
+        }),
+        ANALYZE_TIMEOUT_MS,
+        '简历文字提取'
+      );
+    }
+
+    if (!resumeText) {
+      return res.status(400).json({ error: '未能获取简历文字，请上传简历文件或输入简历内容' });
+    }
+
+    if (!targetRole) {
+      return res.status(400).json({ error: '请输入目标岗位' });
+    }
+
+    const result = await withTimeout(
+      generateRoadmap({ resumeText, targetRole, targetCompany }, aiDeps),
+      AI_TIMEOUT_MS,
+      '路线图生成'
+    );
+
+    res.json(result);
+  } catch (err) {
+    console.error('[roadmap] 失败：', err?.message || err);
+    res.status(500).json({ error: err?.message || String(err) });
+  }
+});
+
+// ========== 简历精修 API ==========
+app.post('/api/tailor', upload.single('file'), async (req, res) => {
+  try {
+    if (!ARK_API_KEY) {
+      return res.status(500).json({ error: '缺少 ARK_API_KEY，请在 backend/.env 配置' });
+    }
+
+    const jobDescription = String(req.body?.jobDescription || '').trim();
+    const file = req.file;
+    if (file) file.originalname = decodeUploadFilename(file.originalname);
+
+    let resumeText = String(req.body?.resumeText || '').trim();
+
+    if (file) {
+      console.log(`[tailor] 提取简历文字 file=${file.originalname}`);
+      resumeText = await withTimeout(
+        extractResumeText(file, {
+          maxPages: MAX_PAGES_FOR_OCR,
+          ocrPageTimeoutMs: AI_TIMEOUT_MS,
+          ocrImageToText: (b64) => ocrImageToText(b64, aiDeps),
+        }),
+        ANALYZE_TIMEOUT_MS,
+        '简历文字提取'
+      );
+    }
+
+    if (!resumeText) {
+      return res.status(400).json({ error: '未能获取简历文字，请上传简历文件或输入简历内容' });
+    }
+
+    if (!jobDescription) {
+      return res.status(400).json({ error: '请粘贴岗位描述（JD）' });
+    }
+
+    const result = await withTimeout(
+      tailorResume({ resumeText, jobDescription }, aiDeps),
+      AI_TIMEOUT_MS,
+      '简历精修'
+    );
+
+    res.json(result);
+  } catch (err) {
+    console.error('[tailor] 失败：', err?.message || err);
+    res.status(500).json({ error: err?.message || String(err) });
+  }
+});
+
+app.post('/api/tailor/export', async (req, res) => {
+  try {
+    const { resumeText, format, jobTitle } = req.body;
+
+    if (!resumeText) {
+      return res.status(400).json({ error: '缺少简历文本' });
+    }
+
+    if (format === 'pdf') {
+      const pdfBuf = await generatePDF(resumeText, jobTitle);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="tailored-resume.pdf"');
+      res.send(pdfBuf);
+    } else if (format === 'docx') {
+      const docxBuf = await generateDOCX(resumeText, jobTitle);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', 'attachment; filename="tailored-resume.docx"');
+      res.send(docxBuf);
+    } else if (format === 'html') {
+      const html = buildResumeHtml(resumeText, jobTitle);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+    } else {
+      return res.status(400).json({ error: '不支持的格式，可选：pdf / docx / html' });
+    }
+  } catch (err) {
+    console.error('[tailor/export] 失败：', err?.message || err);
+    res.status(500).json({ error: err?.message || String(err) });
+  }
 });
 
 const server = app.listen(PORT, () => {

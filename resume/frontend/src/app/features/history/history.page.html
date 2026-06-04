@@ -1,27 +1,25 @@
 <div class="page history-page">
-  <header class="page-head">
-    <div class="header-row">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-header-inner">
       <div>
-        <h1>分析历史</h1>
-        <p>共 {{ total }} 条分析记录</p>
+        <div class="page-icon">☰</div>
+        <div class="page-title">历史记录</div>
+        <div class="page-sub">共 {{ total }} 条分析记录</div>
       </div>
-      <div class="header-actions">
-        <button class="filter-btn" [class.active]="favoritesOnly" (click)="toggleFavoritesFilter()">
-          {{ favoritesOnly ? '显示全部' : '只看收藏' }}
-        </button>
-        <button class="compare-btn" [disabled]="selectedIds.length < 2" (click)="compare()">
-          对比 ({{ selectedIds.length }})
-        </button>
+      <div class="page-meta">
+        <span class="meta-tag">{{ total }} 条记录</span>
       </div>
     </div>
+  </div>
 
-    <div class="filters">
-      <input
-        type="text"
-        [(ngModel)]="searchText"
-        placeholder="搜索文件名 / 岗位 / 描述"
-        (keyup.enter)="loadHistory(1)"
-      />
+  <div class="page-body">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="text" [(ngModel)]="searchText" placeholder="搜索文件名 / 岗位 / 描述" (keyup.enter)="loadHistory(1)" />
+      </div>
       <app-custom-select
         [options]="scoreOptions"
         [(selectedValue)]="minScore"
@@ -32,79 +30,120 @@
         [(selectedValue)]="selectedTagId"
         (selectedValueChange)="loadHistory(1)"
       ></app-custom-select>
-      <button (click)="loadHistory(1)">筛选</button>
-      <button class="tag-manage-btn" (click)="showTagManager = true">管理标签</button>
+      <button class="tool-btn" [class.active]="favoritesOnly" (click)="toggleFavoritesFilter()">
+        {{ favoritesOnly ? '★ 已收藏' : '☆ 收藏' }}
+      </button>
+      <button class="tool-btn primary" (click)="loadHistory(1)">筛选</button>
+      <button class="tool-btn" (click)="showTagManager = true">管理标签</button>
+      <button class="tool-btn compare" [disabled]="selectedIds.length < 2" (click)="compare()">
+        对比 ({{ selectedIds.length }})
+      </button>
     </div>
-  </header>
 
-  <p class="error" *ngIf="error">{{ error }}</p>
+    <p class="error" *ngIf="error">{{ error }}</p>
 
-  <div class="loading" *ngIf="loading">加载中...</div>
+    <!-- Skeleton Table -->
+    <div class="card skeleton-table" *ngIf="loading">
+      <table class="table">
+        <thead>
+          <tr>
+            <th class="col-cb"><div class="skeleton" style="width:14px;height:14px;margin:0 auto"></div></th>
+            <th><div class="skeleton skeleton-text" style="width:40px;margin:0"></div></th>
+            <th><div class="skeleton skeleton-text" style="width:60px;margin:0"></div></th>
+            <th><div class="skeleton skeleton-text" style="width:50px;margin:0"></div></th>
+            <th><div class="skeleton skeleton-text" style="width:36px;margin:0"></div></th>
+            <th><div class="skeleton skeleton-text" style="width:48px;margin:0"></div></th>
+            <th><div class="skeleton skeleton-text" style="width:24px;margin:0"></div></th>
+            <th><div class="skeleton skeleton-text" style="width:70px;margin:0"></div></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let _ of [1,2,3,4,5,6,7,8]">
+            <td class="col-cb"><div class="skeleton" style="width:14px;height:14px;margin:0 auto"></div></td>
+            <td class="col-time"><div class="skeleton skeleton-text" style="width:100px;margin:0"></div></td>
+            <td class="col-file"><div class="skeleton skeleton-text" style="width:130px;margin:0"></div></td>
+            <td><div class="skeleton skeleton-text" style="width:60px;margin:0"></div></td>
+            <td><div class="skeleton skeleton-pill" style="width:42px;margin:0"></div></td>
+            <td class="col-tags">
+              <div class="skeleton skeleton-pill" style="width:40px;display:inline-block;margin-right:4px"></div>
+              <div class="skeleton skeleton-pill" style="width:44px;display:inline-block"></div>
+            </td>
+            <td class="col-star"><div class="skeleton" style="width:18px;height:18px;margin:0 auto"></div></td>
+            <td class="col-actions">
+              <div class="skeleton skeleton-pill" style="width:50px;display:inline-block;margin-right:6px"></div>
+              <div class="skeleton skeleton-pill" style="width:34px;display:inline-block"></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-  <div class="table-wrapper" *ngIf="records.length && !loading">
-    <table class="table">
-      <thead>
-        <tr>
-          <th class="col-select">选择</th>
-          <th>时间</th>
-          <th>文件</th>
-          <th>岗位</th>
-          <th>匹配度</th>
-          <th>标签</th>
-          <th>收藏</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let r of records" [class.selected]="selectedIds.includes(r.id)">
-          <td class="col-select">
-            <input type="checkbox" [checked]="selectedIds.includes(r.id)" (change)="toggleSelect(r.id, $event)" />
-          </td>
-          <td>{{ r.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
-          <td>{{ r.fileName | truncate: 24 }}</td>
-          <td>{{ r.jobTitle || '—' }}</td>
-          <td><span [class]="r.matchScore | scoreColor">{{ r.matchScore }}%</span></td>
-          <td class="col-tags">
-            <div class="tag-list" *ngIf="r.tags?.length">
-              <span class="tag-pill" *ngFor="let t of r.tags" [style.background]="t.color + '20'" [style.color]="t.color" (click)="editRecordTags(r, $event)">
-                {{ t.name }}
+    <!-- Table -->
+    <div class="card" style="padding:0;overflow:hidden" *ngIf="records.length && !loading">
+      <table class="table">
+        <thead>
+          <tr>
+            <th class="col-cb"><input type="checkbox" class="cb" /></th>
+            <th>时间</th>
+            <th>文件</th>
+            <th>岗位</th>
+            <th>匹配度</th>
+            <th>标签</th>
+            <th>收藏</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of records" [class.selected]="selectedIds.includes(r.id)">
+            <td class="col-cb"><input type="checkbox" class="cb" [checked]="selectedIds.includes(r.id)" (change)="toggleSelect(r.id, $event)" /></td>
+            <td class="col-time">{{ r.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+            <td class="col-file">{{ r.fileName | truncate: 24 }}</td>
+            <td>{{ r.jobTitle || '—' }}</td>
+            <td>
+              <span class="score-pill" [class.high]="r.matchScore >= 80" [class.mid]="r.matchScore >= 60 && r.matchScore < 80" [class.low]="r.matchScore < 60">
+                {{ r.matchScore }}%
               </span>
-            </div>
-            <button class="add-tag-btn" (click)="editRecordTags(r, $event)">+ 标签</button>
-          </td>
-          <td class="col-star">
-            <button class="star-btn" [class.starred]="r.isFavorite" (click)="toggleFavorite(r, $event)">
-              {{ r.isFavorite ? '★' : '☆' }}
-            </button>
-          </td>
-          <td class="actions">
-            <span class="action-btns">
-              <button class="view-btn" [routerLink]="['/history', r.id]">查看详情</button>
+            </td>
+            <td class="col-tags">
+              <div class="tag-list" *ngIf="r.tags?.length">
+                <span class="tag-chip" *ngFor="let t of r.tags" [style.background]="t.color + '20'" [style.color]="t.color" (click)="editRecordTags(r, $event)">{{ t.name }}</span>
+              </div>
+              <button class="add-tag" (click)="editRecordTags(r, $event)">+ 标签</button>
+            </td>
+            <td class="col-star">
+              <button class="star-btn" [class.active]="r.isFavorite" (click)="toggleFavorite(r, $event)">
+                {{ r.isFavorite ? '★' : '☆' }}
+              </button>
+            </td>
+            <td class="col-actions">
+              <button class="action-btn" [routerLink]="['/history', r.id]">查看详情</button>
               <button class="delete-btn" (click)="deleteRecord(r.id, $event)">删除</button>
-            </span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="empty" *ngIf="!records.length && !loading && !error">
+      <p>{{ favoritesOnly ? '暂无收藏记录' : '暂无记录，请先在「分析」页完成一次分析。' }}</p>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="totalPages > 1 && !loading">
+      <button class="page-btn" [disabled]="currentPage === 1" (click)="goToPage(1)">‹‹</button>
+      <button class="page-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">‹</button>
+      <button class="page-btn" *ngFor="let p of pages" [class.active]="p === currentPage" (click)="goToPage(p)">{{ p }}</button>
+      <button class="page-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">›</button>
+      <button class="page-btn" [disabled]="currentPage === totalPages" (click)="goToPage(totalPages)">››</button>
+    </div>
   </div>
 
-  <div class="empty" *ngIf="!records.length && !loading">
-    <p>{{ favoritesOnly ? '暂无收藏记录' : '暂无记录，请先在「分析」页完成一次分析。' }}</p>
-  </div>
-
-  <div class="pagination" *ngIf="totalPages > 1 && !loading">
-    <button [disabled]="currentPage === 1" (click)="goToPage(1)">首页</button>
-    <button [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">上一页</button>
-    <button *ngFor="let p of pages" [class.active]="p === currentPage" (click)="goToPage(p)">{{ p }}</button>
-    <button [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">下一页</button>
-    <button [disabled]="currentPage === totalPages" (click)="goToPage(totalPages)">末页</button>
-  </div>
-
+  <!-- Tag Manager Modal -->
   <div class="modal-overlay" *ngIf="showTagManager" (click)="showTagManager = false">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>管理标签</h3>
-        <button class="close-btn" (click)="showTagManager = false">×</button>
+        <button class="modal-close" (click)="showTagManager = false">✕</button>
       </div>
       <div class="modal-body">
         <div class="tag-create">
@@ -112,32 +151,33 @@
           <input type="color" [(ngModel)]="newTagColor" />
           <button (click)="createTag()">添加</button>
         </div>
-        <div class="tag-list-manage">
+        <div class="tag-manage-list">
           <div class="tag-item" *ngFor="let t of tags">
-            <span class="tag-pill" [style.background]="t.color + '20'" [style.color]="t.color">{{ t.name }}</span>
-            <button class="delete-tag-btn" (click)="deleteTag(t.id)">删除</button>
+            <span class="tag-chip" [style.background]="t.color + '20'" [style.color]="t.color">{{ t.name }}</span>
+            <button class="tag-del" (click)="deleteTag(t.id)">删除</button>
           </div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Edit Tags Modal -->
   <div class="modal-overlay" *ngIf="editingRecord" (click)="editingRecord = null">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>编辑标签 - {{ editingRecord.fileName }}</h3>
-        <button class="close-btn" (click)="editingRecord = null">×</button>
+        <button class="modal-close" (click)="editingRecord = null">✕</button>
       </div>
       <div class="modal-body">
-        <div class="tag-select-list">
-          <div class="tag-option" *ngFor="let t of tags" [class.selected]="isTagSelected(t.id)" (click)="toggleTag(t.id)">
-            <span class="tag-pill" [style.background]="isTagSelected(t.id) ? t.color : 'transparent'" [style.border-color]="t.color" [style.color]="isTagSelected(t.id) ? '#fff' : t.color">{{ t.name }}</span>
+        <div class="tag-select">
+          <div class="tag-opt" *ngFor="let t of tags" [class.selected]="isTagSelected(t.id)" (click)="toggleTag(t.id)">
+            <span class="tag-chip" [style.background]="isTagSelected(t.id) ? t.color : 'transparent'" [style.border-color]="t.color" [style.color]="isTagSelected(t.id) ? '#fff' : t.color">{{ t.name }}</span>
           </div>
         </div>
         <p *ngIf="!tags.length" class="no-tags">暂无标签，请先创建标签</p>
         <div class="modal-actions" *ngIf="tags.length">
-          <button class="cancel-btn" (click)="editingRecord = null">取消</button>
-          <button class="save-btn" (click)="saveRecordTags()">保存</button>
+          <button class="btn-cancel" (click)="editingRecord = null">取消</button>
+          <button class="btn-save" (click)="saveRecordTags()">保存</button>
         </div>
       </div>
     </div>

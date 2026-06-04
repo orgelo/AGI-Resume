@@ -211,4 +211,4 @@ async function ocrImageToText(base64Png, { arkPostJson, vlModel }) {
   return '';
 }
 
-module.exports = { analyzeResume, ocrImageToText, safeJsonParse, normalizeAnalysisResult };
+module.exports = { analyzeResume, ocrImageToText, safeJsonParse, normalizeAnalysisResult, arkExtractMessageContent };

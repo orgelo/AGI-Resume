@@ -87,10 +87,121 @@ export interface ScoreTrendData {
   avgStructure: number | null;
 }
 
+export interface LatestPreview {
+  hasData: boolean;
+  fileName?: string;
+  jobTitle?: string;
+  matchScore?: number;
+  structureScore?: number;
+  expressionScore?: number;
+  atsScore?: number;
+  keywordCoverage?: number;
+  matchedKeywords?: string[];
+  missingKeywords?: string[];
+  partialKeywords?: string[];
+  summary?: string;
+}
+
 export interface PaginatedResponse {
   list: AnalysisRecord[];
   total: number;
   page: number;
   pageSize: number;
   totalPages: number;
+}
+
+// ========== 面试模拟模型 ==========
+
+export interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+export interface InterviewStartResult {
+  greeting: string;
+  firstQuestion: string;
+  category: string;
+  questionPool: {
+    technical: string[];
+    project: string[];
+    behavioral: string[];
+    hr: string[];
+  };
+  focusAreas: string[];
+}
+
+export interface InterviewChatResult {
+  reply: string;
+  category: string;
+  isFollowUp: boolean;
+  isComplete: boolean;
+}
+
+export interface InterviewEvaluateResult {
+  technicalScore: number;
+  communicationScore: number;
+  starScore: number;
+  riskAnalysis: string[];
+  strengths: string[];
+  suggestions: string[];
+  overallComment: string;
+  categoryScores: {
+    technical: { score: number; comment: string };
+    project: { score: number; comment: string };
+    behavioral: { score: number; comment: string };
+    hr: { score: number; comment: string };
+  };
+}
+
+// ========== 职业路线图模型 ==========
+export interface RoadmapMilestone {
+  name: string;
+  weeks: number;
+  description: string;
+}
+
+export interface RoadmapPhase {
+  title: string;
+  milestones: RoadmapMilestone[];
+  learning: string[];
+  projects: string[];
+  certifications: string[];
+  books: string[];
+  courses: string[];
+}
+
+export interface CareerRoadmapResult {
+  currentLevel: string;
+  skillGaps: string[];
+  industryRequirements: string[];
+  roadmap: {
+    threeMonth: RoadmapPhase;
+    sixMonth: RoadmapPhase;
+    twelveMonth: RoadmapPhase;
+  };
+  overallAdvice: string;
+}
+
+// ========== 简历精修模型 ==========
+export interface TailorChange {
+  original: string;
+  rewritten: string;
+  reason: string;
+  type: 'keyword' | 'expression' | 'structure' | 'order';
+}
+
+export interface TailorResult {
+  jdKeywords: {
+    mustHave: string[];
+    niceToHave: string[];
+    softSkills: string[];
+  };
+  matchAnalysis: {
+    matched: string[];
+    partialMatch: string[];
+    missing: string[];
+  };
+  changes: TailorChange[];
+  tailoredResume: string;
+  summary: string;
 }

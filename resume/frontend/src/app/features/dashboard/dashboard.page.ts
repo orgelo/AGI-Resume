@@ -13,54 +13,27 @@ import { DashboardStats, AnalysisRecord, ScoreTrendData } from '../../core/model
 export class DashboardPage implements OnInit {
   private readonly api = inject(ResumeApiService);
   private readonly cdr = inject(ChangeDetectorRef);
+  loading = true;
   stats: DashboardStats | null = null;
   recentRecords: AnalysisRecord[] = [];
 
   weeklyData: { label: string; count: number }[] = [
-    { label: '周一', count: 0 },
-    { label: '周二', count: 0 },
+    { label: '周五', count: 0 },
+    { label: '周六', count: 1 },
+    { label: '周日', count: 0 },
+    { label: '周一', count: 3 },
+    { label: '周二', count: 2 },
     { label: '周三', count: 0 },
     { label: '周四', count: 0 },
-    { label: '周五', count: 0 },
-    { label: '周六', count: 0 },
-    { label: '周日', count: 0 },
   ];
 
   scoreTrend: ScoreTrendData[] = [];
 
-  get hasScoreData(): boolean {
-    return this.scoreTrend.some(d => d.avgMatch !== null || d.avgStructure !== null);
-  }
-
-  getMatchPoints(): string {
-    if (!this.scoreTrend.length) return '';
-    const data = this.scoreTrend.slice(-7);
-    return data.map((d, i) => {
-      const x = (i / Math.max(data.length - 1, 1)) * 800;
-      const y = 120 - ((d.avgMatch || 0) / 100) * 120;
-      return `${x},${y}`;
-    }).join(' ');
-  }
-
-  getStructurePoints(): string {
-    if (!this.scoreTrend.length) return '';
-    const data = this.scoreTrend.slice(-7);
-    return data.map((d, i) => {
-      const x = (i / Math.max(data.length - 1, 1)) * 800;
-      const y = 120 - ((d.avgStructure || 0) / 100) * 120;
-      return `${x},${y}`;
-    }).join(' ');
-  }
-
-  circumference = 2 * Math.PI * 52;
-
-  get progressOffset(): number {
-    const score = this.stats?.avgMatchScore || 0;
-    return this.circumference - (score / 100) * this.circumference;
-  }
+  // Donut
+  readonly donutCircum = 2 * Math.PI * 36; // ≈ 226
 
   get maxDayCount(): number {
-    return Math.max(...this.weeklyData.map((d) => d.count), 1);
+    return Math.max(...this.weeklyData.map(d => d.count), 1);
   }
 
   get avgMatchScoreDisplay(): string {
@@ -71,6 +44,39 @@ export class DashboardPage implements OnInit {
     return (this.stats?.avgStructureScore || 0).toFixed(0);
   }
 
+  get donutOffset(): number {
+    const score = this.stats?.avgMatchScore || 0;
+    return this.donutCircum - (score / 100) * this.donutCircum;
+  }
+
+  get hasScoreData(): boolean {
+    return this.scoreTrend.some(d => d.avgMatch !== null || d.avgStructure !== null);
+  }
+
+  get maxKwCount(): number {
+    if (!this.stats?.topMissingKeywords?.length) return 1;
+    return Math.max(...this.stats.topMissingKeywords.map(k => k.count || 1), 1);
+  }
+
+  getMatchLinePath(): string {
+    return this.buildLinePath(this.scoreTrend, 'avgMatch');
+  }
+
+  getStructureLinePath(): string {
+    return this.buildLinePath(this.scoreTrend, 'avgStructure');
+  }
+
+  private buildLinePath(data: ScoreTrendData[], field: 'avgMatch' | 'avgStructure'): string {
+    if (!data.length) return '0,40 400,40';
+    const valid = data.filter(d => d[field] !== null);
+    if (valid.length < 2) return '0,40 400,40';
+    return valid.map((d, i) => {
+      const x = (i / Math.max(valid.length - 1, 1)) * 400;
+      const y = 80 - ((d[field] || 0) / 100) * 80;
+      return `${x},${y}`;
+    }).join(' ');
+  }
+
   ngOnInit() {
     this.api.getDashboard().subscribe({
       next: (s) => {
@@ -78,6 +84,11 @@ export class DashboardPage implements OnInit {
         if (s.weeklyData && s.weeklyData.length > 0) {
           this.weeklyData = s.weeklyData;
         }
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.loading = false;
         this.cdr.detectChanges();
       },
     });
@@ -95,12 +106,6 @@ export class DashboardPage implements OnInit {
         this.cdr.detectChanges();
       },
     });
-  }
-
-  getScoreClass(score: number): string {
-    if (score >= 75) return 'item-score high';
-    if (score >= 60) return 'item-score mid';
-    return 'item-score low';
   }
 
   getScoreDisplay(score: number): string {

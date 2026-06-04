@@ -1,51 +1,366 @@
-<div class="page analyze-page">
-  <header class="page-head">
-    <h1>简历智能分析</h1>
-    <p>上传 PDF/DOCX，结合 JD 完成诊断、匹配与优化建议</p>
-  </header>
+<div class="landing">
+  <canvas #particleCanvas class="particle-bg"></canvas>
 
-  <div class="grid">
-    <section class="card">
-      <h2>上传与分析</h2>
-
-      <label>岗位名称</label>
-      <input type="text" [(ngModel)]="jobTitle" placeholder="如：前端开发工程师" />
-
-      <label>简历文件</label>
-      <input type="file" id="resume-file" accept=".pdf,.docx" (change)="onFileChange($event)" />
-      <label for="resume-file" class="file-upload-area" [class.has-file]="file">
-        <div *ngIf="!file">
-          <div class="upload-icon">📄</div>
-          <div class="upload-text">点击选择简历文件</div>
-          <div class="upload-hint">支持 PDF、DOCX 格式</div>
-        </div>
-        <div *ngIf="file" class="file-preview">
-          <span class="file-icon">📄</span>
-          <div class="file-info">
-            <span class="file-name">{{ file.name }}</span>
-            <span class="file-size">{{ formatFileSize(file.size) }}</span>
-          </div>
-          <button class="file-remove" (click)="removeFile($event)">×</button>
-        </div>
-      </label>
-
-      <label>岗位描述 JD <span class="char-count">{{ jobDescription.length }} 字</span></label>
-      <textarea rows="8" [(ngModel)]="jobDescription" placeholder="从招聘网站复制 JD 内容到这里..."></textarea>
-
-      <button type="button" class="btn-primary" (click)="$event.preventDefault(); $event.stopPropagation(); onAnalyze()" [disabled]="loading || !file">
-        {{ loading ? '分析中…' : '开始分析' }}
-      </button>
-      <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
-    </section>
-
-    <section class="card">
-      <h2>分析结果</h2>
-      <app-result-panel
-        [analysis]="analysis"
-        [loading]="loading"
-        [loadingHint]="loadingHint"
-        [errorMessage]="errorMessage"
-      />
-    </section>
+  <!-- Ambient -->
+  <div class="ambience">
+    <div class="amb amb-1"></div>
+    <div class="amb amb-2"></div>
+    <div class="amb amb-3"></div>
   </div>
+  <div class="grid"></div>
+
+  <!-- ═══════════ HOME ═══════════ -->
+  <div *ngIf="!analysis && !loading">
+
+    <!-- HERO — two column -->
+    <section class="hero">
+
+      <!-- LEFT: Live Analysis Preview Panel -->
+      <div class="hero-left">
+        <div class="live-panel">
+          <!-- Panel top bar -->
+          <div class="panel-bar">
+            <div class="panel-dots">
+              <div class="panel-dot d1"></div>
+              <div class="panel-dot d2"></div>
+              <div class="panel-dot d3"></div>
+            </div>
+            <span class="panel-bar-title">resume_analysis.log</span>
+            <div class="live-badge">
+              <span class="live-dot"></span> LIVE
+            </div>
+          </div>
+
+          <!-- Resume doc preview + stream log -->
+          <div class="resume-strip">
+            <div class="resume-doc">
+              <div class="scan-line"></div>
+              <div class="doc-line w-60 highlight"></div>
+              <div class="doc-line w-full"></div>
+              <div class="doc-line w-80"></div>
+              <div class="doc-line w-full"></div>
+              <div class="doc-line w-90 highlight"></div>
+              <div class="doc-line w-60"></div>
+              <div class="doc-line w-full"></div>
+              <div class="doc-line w-80 highlight"></div>
+              <div class="doc-line w-full"></div>
+              <div class="doc-line w-60"></div>
+              <div class="doc-line w-90"></div>
+              <div class="doc-line w-full highlight"></div>
+              <div class="doc-line w-80"></div>
+            </div>
+
+            <div class="analysis-stream" #streamEl></div>
+          </div>
+
+          <!-- Score cards -->
+          <div class="score-grid">
+            <div class="score-card c1" [class.preview-live]="preview.hasData">
+              <div class="score-label">JD 匹配度</div>
+              <div class="score-value">{{ preview.hasData ? preview.matchScore : 78 }}<span>%</span></div>
+            </div>
+            <div class="score-card c2" [class.preview-live]="preview.hasData">
+              <div class="score-label">简历结构分</div>
+              <div class="score-value">{{ preview.hasData ? preview.structureScore : 85 }}<span>/100</span></div>
+            </div>
+            <div class="score-card c3" [class.preview-live]="preview.hasData">
+              <div class="score-label">关键词覆盖</div>
+              <div class="score-value">{{ preview.hasData ? preview.keywordCoverage : 62 }}<span>%</span></div>
+            </div>
+            <div class="score-card c4" [class.preview-live]="preview.hasData">
+              <div class="score-label">表达清晰度</div>
+              <div class="score-value">{{ preview.hasData ? preview.expressionScore : 71 }}<span>/100</span></div>
+            </div>
+          </div>
+
+          <!-- Keyword tags -->
+          <div class="keyword-section">
+            <div class="kw-title">// 关键词匹配<span *ngIf="preview.hasData" class="kw-source"> — 来自 {{ preview.fileName }}</span></div>
+            <div class="kw-tags">
+              <ng-container *ngIf="preview.hasData; else mockKw">
+                <span class="kw-tag match" *ngFor="let k of preview.matchedKeywords; let i = index" [style.animationDelay]="(i * 0.1) + 's'">{{ k }} ✓</span>
+                <span class="kw-tag partial" *ngFor="let k of preview.partialKeywords; let i = index" [style.animationDelay]="((preview.matchedKeywords?.length || 0) + i) * 0.1 + 's'">{{ k }} ~</span>
+                <span class="kw-tag miss" *ngFor="let k of preview.missingKeywords; let i = index" [style.animationDelay]="((preview.matchedKeywords?.length || 0) + (preview.partialKeywords?.length || 0) + i) * 0.1 + 's'">{{ k }} ✗</span>
+              </ng-container>
+              <ng-template #mockKw>
+                <span class="kw-tag match" style="animation-delay:0.1s">React ✓</span>
+                <span class="kw-tag match" style="animation-delay:0.2s">TypeScript ✓</span>
+                <span class="kw-tag partial" style="animation-delay:0.3s">Node.js ~</span>
+                <span class="kw-tag miss" style="animation-delay:0.4s">微前端 ✗</span>
+                <span class="kw-tag match" style="animation-delay:0.5s">性能优化 ✓</span>
+                <span class="kw-tag miss" style="animation-delay:0.6s">低代码平台 ✗</span>
+                <span class="kw-tag partial" style="animation-delay:0.7s">CI/CD ~</span>
+              </ng-template>
+            </div>
+          </div>
+
+          <!-- Overall score ring -->
+          <div class="overall-row">
+            <div class="ring-wrap">
+              <svg width="56" height="56" viewBox="0 0 56 56">
+                <circle class="ring-bg" cx="28" cy="28" r="22"/>
+                <circle class="ring-fill" cx="28" cy="28" r="22"
+                [style.strokeDashoffset]="preview.hasData ? 138 - 138 * (preview.matchScore || 0) / 100 : null"/>
+              </svg>
+              <div class="ring-text">
+                <span class="ring-num">{{ preview.hasData ? preview.matchScore : 78 }}</span>
+                <span class="ring-pct">%</span>
+              </div>
+            </div>
+            <div class="overall-text">
+              <div class="overall-label">综合评估</div>
+              <div class="overall-desc" *ngIf="preview.hasData && preview.summary; else mockSummary">
+                {{ preview.summary }}
+              </div>
+              <ng-template #mockSummary>
+                <div class="overall-desc">
+                  简历结构良好，建议补充<strong>微前端</strong>与<strong>低代码</strong>相关经验以提升匹配度
+                </div>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: upload panel -->
+      <div class="hero-right">
+        <!-- Badge -->
+        <div class="badge">
+          <span class="badge-pulse"></span>
+          <span>AI Career Agent</span>
+          <span class="badge-sep"></span>
+          <span>Powered by DeepSeek</span>
+        </div>
+
+        <div class="upload-panel" [class.drag-over]="isDragging">
+          <!-- Drop zone -->
+          <div
+            class="dropzone"
+            [class.has-file]="!!file"
+            [class.scanning]="isScanning"
+            (click)="fileInput.click()"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onFileDrop($event)"
+          >
+            <input #fileInput type="file" accept=".pdf,.docx,.doc" (change)="onFileChange($event)" hidden />
+
+            <ng-container *ngIf="!file">
+              <div class="dz-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <div class="dz-label">拖拽文件到此处，或<span>点击上传</span></div>
+              <div class="dz-sub">最大 20MB，扫描件自动 OCR</div>
+              <div class="dz-tags">
+                <span class="dz-tag">PDF</span>
+                <span class="dz-tag">DOCX</span>
+              </div>
+            </ng-container>
+
+            <ng-container *ngIf="file">
+              <div class="dz-file-display">
+                <div class="dz-file-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                </div>
+                <span class="dz-file-name">{{ file.name }}</span>
+                <span class="dz-file-size">{{ formatFileSize(file.size) }}</span>
+                <button class="dz-file-remove" (click)="removeFile($event)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            </ng-container>
+          </div>
+
+          <!-- Input fields -->
+          <div class="input-grid">
+            <input class="inp" type="text" placeholder="目标岗位（选填，如 前端工程师）" [(ngModel)]="jobTitle" />
+            <textarea class="inp inp-jd" placeholder="粘贴 JD，AI 将分析匹配度（选填，不填也可分析）" [(ngModel)]="jobDescription" rows="2"></textarea>
+          </div>
+
+          <!-- CTA -->
+          <button class="btn-analyze" [class.loading]="loading" (click)="onAnalyze()" [disabled]="loading || !file">
+            <div class="btn-inner">
+              <ng-container *ngIf="!loading">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                开始分析
+              </ng-container>
+              <ng-container *ngIf="loading">
+                <span class="btn-spin"></span>
+                分析中...
+              </ng-container>
+            </div>
+          </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="hero-meta">
+          <div class="meta-item">
+            <div class="meta-num">10K<span>+</span></div>
+            <div class="meta-label">简历已分析</div>
+          </div>
+          <div class="meta-sep"></div>
+          <div class="meta-item">
+            <div class="meta-num">34<span>%</span></div>
+            <div class="meta-label">平均匹配提升</div>
+          </div>
+          <div class="meta-sep"></div>
+          <div class="meta-item">
+            <div class="meta-num">30<span>s</span></div>
+            <div class="meta-label">出报告时间</div>
+          </div>
+        </div>
+
+        <!-- Error -->
+        <p class="err" *ngIf="errorMessage">{{ errorMessage }}</p>
+      </div>
+    </section>
+
+    <!-- FEATURES SECTION -->
+    <section class="features-section">
+      <div class="section-eyebrow">
+        <div class="eyebrow-line"></div>
+        <div class="eyebrow-text">核心功能模块</div>
+        <div class="eyebrow-line"></div>
+      </div>
+
+      <div class="features-layout">
+
+        <!-- Big featured card -->
+        <a routerLink="/analyze" class="feat-main active-card">
+          <div>
+            <div class="feat-main-icon">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+                <path d="M8 11h6"/><path d="M11 8v6"/>
+              </svg>
+            </div>
+            <div class="feat-main-tag">Core Feature</div>
+            <div class="feat-main-title">竞争力分析</div>
+            <div class="feat-main-desc">
+              上传简历 + JD，AI 自动解析岗位关键词并与你的简历逐一比对。
+              输出五维度评分报告：结构完整性、表达质量、量化程度、ATS 兼容性、完整性检查。
+            </div>
+          </div>
+          <div class="feat-pills">
+            <span class="pill">JD 匹配度评分</span>
+            <span class="pill">ATS 关键词</span>
+            <span class="pill">五维诊断</span>
+            <span class="pill">改进建议</span>
+          </div>
+        </a>
+
+        <!-- 4 small cards -->
+        <a routerLink="/interview" class="feat-small">
+          <div class="feat-small-top">
+            <div class="feat-small-icon">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+              </svg>
+            </div>
+            <span class="feat-small-arrow">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>
+              </svg>
+            </span>
+          </div>
+          <div class="feat-small-title">模拟面试</div>
+          <div class="feat-small-desc">AI 面试官实时追问，技术 · 项目 · 行为三轮全覆盖，评估反馈即时生成</div>
+        </a>
+
+        <a routerLink="/career-roadmap" class="feat-small">
+          <div class="feat-small-top">
+            <div class="feat-small-icon">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+              </svg>
+            </div>
+            <span class="feat-small-arrow">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>
+              </svg>
+            </span>
+          </div>
+          <div class="feat-small-title">职业路线</div>
+          <div class="feat-small-desc">技能规划 · 成长路径 · 目标岗位，个性化的职业发展建议</div>
+        </a>
+
+        <a routerLink="/tailor" class="feat-small">
+          <div class="feat-small-top">
+            <div class="feat-small-icon">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </div>
+            <span class="feat-small-arrow">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>
+              </svg>
+            </span>
+          </div>
+          <div class="feat-small-title">简历精修</div>
+          <div class="feat-small-desc">AI 改写优化，关键词增强，Before / After 对比，版本管理</div>
+        </a>
+
+        <a routerLink="/dashboard" class="feat-small">
+          <div class="feat-small-top">
+            <div class="feat-small-icon">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="8" height="8" rx="1.5"/>
+                <rect x="14" y="2" width="8" height="12" rx="1.5"/>
+                <rect x="2" y="14" width="8" height="8" rx="1.5"/>
+                <rect x="14" y="18" width="4" height="4" rx="1.5"/>
+              </svg>
+            </div>
+            <span class="feat-small-arrow">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>
+              </svg>
+            </span>
+          </div>
+          <div class="feat-small-title">数据看板</div>
+          <div class="feat-small-desc">投递追踪 · 分数趋势 · 转化漏斗，量化你的求职进度</div>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- FOOTER STRIP -->
+    <footer class="footer-strip">
+      <div class="footer-left">
+        ResumeMind · AGI 课程结课项目 &nbsp;·&nbsp;
+        <a href="#">github.com/orgelo/resumemind</a>
+      </div>
+      <div class="footer-right">
+        <div class="status-dot" [class.online]="backendOk" [class.offline]="!backendOk"></div>
+        <span class="status-txt">DeepSeek API · {{ backendOk ? '在线' : '离线' }}</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ═══════════ RESULT ═══════════ -->
+  <section class="result-page" #resultSection *ngIf="analysis || loading">
+    <app-result-panel
+      [analysis]="analysis"
+      [loading]="loading"
+      [loadingHint]="loadingHint"
+      [errorMessage]="loading ? '' : ''"
+    />
+    <div class="back-home">
+      <a routerLink="/">← 返回首页</a>
+    </div>
+  </section>
 </div>

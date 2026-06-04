@@ -1,0 +1,200 @@
+<div class="page roadmap-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-header-inner">
+      <div>
+        <div class="page-icon">🗺️</div>
+        <div class="page-title">职业路线</div>
+        <div class="page-sub">上传简历，设定目标岗位和公司，AI 为你规划 3/6/12 个月成长路线</div>
+      </div>
+      <div class="page-meta">
+        <span class="meta-tag">3个月</span>
+        <span class="meta-tag">6个月</span>
+        <span class="meta-tag">12个月</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Setup Phase ========== -->
+  <div class="page-body" *ngIf="phase === 'setup'">
+    <div class="grid-2">
+      <!-- Left: Form -->
+      <div>
+        <div class="feature-strip">
+          <div class="feature-card">
+            <div class="feature-card-icon">📊</div>
+            <div class="feature-card-title">差距分析</div>
+            <div class="feature-card-desc">当前能力 vs 目标岗位要求</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">📅</div>
+            <div class="feature-card-title">里程碑规划</div>
+            <div class="feature-card-desc">按月拆解可执行学习任务</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">🏢</div>
+            <div class="feature-card-title">公司定制</div>
+            <div class="feature-card-desc">针对目标公司技术栈优化</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="upload-zone" [class.has-file]="!!file" (click)="fileInput.click()" (dragover)="$event.preventDefault()" (drop)="onFileDrop($event)">
+            <input #fileInput type="file" accept=".pdf,.docx,.doc" (change)="onFileChange($event)" hidden />
+            <ng-container *ngIf="!file">
+              <div class="upload-icon-wrap">↑</div>
+              <div class="upload-text">拖拽或<span>点击上传</span>简历（可选）</div>
+              <div class="upload-formats">
+                <span class="fmt">PDF</span>
+                <span class="fmt">DOCX</span>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="file">
+              <div class="file-display">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span class="file-name">{{ file.name }}</span>
+                <span class="file-size">{{ formatFileSize(file.size) }}</span>
+                <button class="file-remove" (click)="removeFile($event)">✕</button>
+              </div>
+            </ng-container>
+          </div>
+
+          <div class="field-group">
+            <label class="label">目标岗位 <span class="required">*</span></label>
+            <input class="input-field" type="text" [(ngModel)]="targetRole" placeholder="例如：高级前端工程师" />
+          </div>
+          <div class="field-group">
+            <label class="label">目标公司（选填）</label>
+            <input class="input-field" type="text" [(ngModel)]="targetCompany" placeholder="例如：字节跳动、阿里巴巴" />
+          </div>
+          <div class="field-group">
+            <label class="label">规划周期</label>
+            <div class="period-btns">
+              <button [class.active]="activeTab === 'threeMonth'" (click)="activeTab = 'threeMonth'">3 个月</button>
+              <button [class.active]="activeTab === 'sixMonth'" (click)="activeTab = 'sixMonth'">6 个月</button>
+              <button [class.active]="activeTab === 'twelveMonth'" (click)="activeTab = 'twelveMonth'">12 个月</button>
+            </div>
+          </div>
+
+          <button class="btn-action" (click)="generate()" [disabled]="loading || !targetRole.trim()">
+            <ng-container *ngIf="!loading">🗺️ &nbsp;生成路线图</ng-container>
+            <ng-container *ngIf="loading">⏳ &nbsp;正在生成...</ng-container>
+          </button>
+        </div>
+
+        <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+      </div>
+
+      <!-- Right: Preview -->
+      <div class="card">
+        <div class="card-title">// 路线图预览（示例 · 3个月）</div>
+        <div class="roadmap-timeline">
+          <div class="roadmap-node active">
+            <div class="roadmap-period">第 1 个月 · 基础强化</div>
+            <div class="roadmap-task">深入 React 18 并发特性 & Hooks 最佳实践</div>
+            <div class="roadmap-tags">
+              <span class="roadmap-tag">useTransition</span>
+              <span class="roadmap-tag">Suspense</span>
+              <span class="roadmap-tag">React Query</span>
+            </div>
+          </div>
+          <div class="roadmap-node">
+            <div class="roadmap-period">第 1-2 个月 · 架构能力</div>
+            <div class="roadmap-task">学习微前端架构设计，完成 qiankun Demo 项目</div>
+            <div class="roadmap-tags">
+              <span class="roadmap-tag">qiankun</span>
+              <span class="roadmap-tag">Module Federation</span>
+              <span class="roadmap-tag">沙箱隔离</span>
+            </div>
+          </div>
+          <div class="roadmap-node">
+            <div class="roadmap-period">第 2-3 个月 · 工程化</div>
+            <div class="roadmap-task">掌握 CI/CD 流程，搭建自动化构建与部署体系</div>
+            <div class="roadmap-tags">
+              <span class="roadmap-tag">GitHub Actions</span>
+              <span class="roadmap-tag">Docker</span>
+              <span class="roadmap-tag">Nginx</span>
+            </div>
+          </div>
+          <div class="roadmap-node">
+            <div class="roadmap-period">第 3 个月 · 项目整合</div>
+            <div class="roadmap-task">完成一个完整的低代码平台 MVP，写入简历</div>
+            <div class="roadmap-tags">
+              <span class="roadmap-tag">低代码</span>
+              <span class="roadmap-tag">拖拽引擎</span>
+              <span class="roadmap-tag">JSON Schema</span>
+            </div>
+          </div>
+        </div>
+        <div class="roadmap-expected">
+          <div class="re-title">// 预期结果</div>
+          <div>完成后匹配度预计从 <strong>62%</strong> 提升至 <strong class="cyan">88%+</strong>，具备投递字节跳动高级前端岗位的竞争力</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Result Phase ========== -->
+  <div class="page-body" *ngIf="phase === 'result' && result">
+    <div class="result-header">
+      <h2>你的职业路线图</h2>
+      <p>{{ result.overallAdvice }}</p>
+      <button class="btn-reset" (click)="reset()">重新规划</button>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:24px">
+      <div class="card">
+        <div class="card-title">当前能力评估</div>
+        <p style="font-size:13px;color:var(--t2);line-height:1.7">{{ result.currentLevel }}</p>
+      </div>
+      <div class="card">
+        <div class="card-title">技能缺口 & 行业要求</div>
+        <div class="gap-tags">
+          <span class="gap-tag" *ngFor="let g of result.skillGaps">{{ g }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline Tabs -->
+    <div class="period-btns" style="margin-bottom:24px">
+      <button *ngFor="let key of phaseKeys" [class.active]="activeTab === key" (click)="activeTab = key">
+        {{ getPhaseLabel(key) }}
+      </button>
+    </div>
+
+    <ng-container *ngFor="let key of phaseKeys">
+      <div *ngIf="activeTab === key" class="phase-result">
+        <h3 class="phase-result-title">{{ result.roadmap[key].title }}</h3>
+
+        <div class="resource-grid">
+          <div class="card" *ngIf="result.roadmap[key].learning.length">
+            <div class="card-title">学习内容</div>
+            <ul class="res-list">
+              <li *ngFor="let item of result.roadmap[key].learning">{{ item }}</li>
+            </ul>
+          </div>
+          <div class="card" *ngIf="result.roadmap[key].projects.length">
+            <div class="card-title">推荐项目</div>
+            <ul class="res-list">
+              <li *ngFor="let item of result.roadmap[key].projects">{{ item }}</li>
+            </ul>
+          </div>
+          <div class="card" *ngIf="result.roadmap[key].books.length">
+            <div class="card-title">推荐书籍</div>
+            <ul class="res-list">
+              <li *ngFor="let item of result.roadmap[key].books">{{ item }}</li>
+            </ul>
+          </div>
+          <div class="card" *ngIf="result.roadmap[key].courses.length">
+            <div class="card-title">推荐课程</div>
+            <ul class="res-list">
+              <li *ngFor="let item of result.roadmap[key].courses">{{ item }}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <button class="btn-reset center" (click)="reset()">重新规划</button>
+  </div>
+</div>

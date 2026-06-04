@@ -5,13 +5,12 @@ import { Router, RouterLink } from '@angular/router';
 import { ResumeApiService } from '../../core/services/resume-api.service';
 import { AnalysisRecord, PaginatedResponse } from '../../core/models/analysis.model';
 import { TruncatePipe } from '../../shared/pipes/truncate.pipe';
-import { ScoreColorPipe } from '../../shared/pipes/score-color.pipe';
 import { CustomSelectComponent, SelectOption } from '../../shared/components/custom-select/custom-select.component';
 
 @Component({
   selector: 'app-history-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TruncatePipe, ScoreColorPipe, CustomSelectComponent],
+  imports: [CommonModule, FormsModule, RouterLink, TruncatePipe, CustomSelectComponent],
   templateUrl: './history.page.html',
   styleUrl: './history.page.scss',
 })

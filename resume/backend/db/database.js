@@ -89,7 +89,7 @@ function listHistory(db) {
   const result = db
     .prepare(
       `SELECT a.id, rf.file_name AS fileName, jp.title AS jobTitle,
-              a.match_score AS matchScore, a.structure_score AS structureScore, a.created_at AS createdAt
+              a.match_score AS matchScore, a.structure_score AS structureScore, (REPLACE(a.created_at, ' ', 'T') || '.000Z') AS createdAt
        FROM analyses a
        JOIN resume_files rf ON rf.id = a.resume_id
        JOIN job_posts jp ON jp.id = a.job_id
@@ -130,7 +130,7 @@ function listHistoryPaginated(db, page, pageSize, offset, favoritesOnly = false,
     .prepare(
       `SELECT a.id, rf.file_name AS fileName, jp.title AS jobTitle,
               a.match_score AS matchScore, a.structure_score AS structureScore,
-              a.is_favorite AS isFavorite, a.created_at AS createdAt
+              a.is_favorite AS isFavorite, (REPLACE(a.created_at, ' ', 'T') || '.000Z') AS createdAt
        FROM analyses a
        JOIN resume_files rf ON rf.id = a.resume_id
        JOIN job_posts jp ON jp.id = a.job_id
@@ -160,7 +160,7 @@ function getHistoryById(db, id) {
       `SELECT a.id, rf.file_name AS fileName, jp.title AS jobTitle,
               a.match_score AS matchScore, a.structure_score AS structureScore,
               a.is_favorite AS isFavorite,
-              a.result_json AS resultJson, a.created_at AS createdAt
+              a.result_json AS resultJson, (REPLACE(a.created_at, ' ', 'T') || '.000Z') AS createdAt
        FROM analyses a
        JOIN resume_files rf ON rf.id = a.resume_id
        JOIN job_posts jp ON jp.id = a.job_id
@@ -335,4 +335,53 @@ function removeTagFromAnalysis(db, analysisId, tagId) {
   return getTagsByAnalysis(db, analysisId);
 }
 
-module.exports = { initDb, saveAnalysis, listHistory, listHistoryPaginated, deleteHistoryById, getHistoryById, toggleFavorite, getDashboard, getScoreTrend, getAllTags, createTag, deleteTag, getTagsByAnalysis, setAnalysisTags, addTagToAnalysis, removeTagFromAnalysis, DB_PATH };
+function getLatestPreview(db) {
+  const row = db
+    .prepare(
+      `SELECT a.id, a.match_score AS matchScore, a.structure_score AS structureScore,
+              a.result_json AS resultJson, jp.title AS jobTitle, rf.file_name AS fileName
+       FROM analyses a
+       JOIN resume_files rf ON rf.id = a.resume_id
+       JOIN job_posts jp ON jp.id = a.job_id
+       ORDER BY a.id DESC LIMIT 1`
+    )
+    .get();
+  if (!row) return { hasData: false };
+
+  let resultJson = {};
+  try { resultJson = JSON.parse(row.resultJson || '{}'); } catch {}
+
+  const d = resultJson.diagnosis || {};
+  const m = resultJson.matching || {};
+
+  const keywords = db.prepare(
+    'SELECT keyword, match_type FROM keywords WHERE analysis_id = ?'
+  ).all(row.id);
+
+  const matchedKeywords = keywords.filter(k => k.match_type === 'matched').map(k => k.keyword);
+  const missingKeywords = keywords.filter(k => k.match_type === 'missing').map(k => k.keyword);
+  const partialKeywords = keywords.filter(k => !['matched', 'missing'].includes(k.match_type)).map(k => k.keyword);
+
+  const matchCount = matchedKeywords.length;
+  const totalCount = matchedKeywords.length + missingKeywords.length + partialKeywords.length;
+  const keywordCoverage = totalCount > 0 ? Math.round((matchCount / totalCount) * 100) : 0;
+
+  const summary = m.summary || m.targetedAdvice || '';
+
+  return {
+    hasData: true,
+    fileName: row.fileName,
+    jobTitle: row.jobTitle,
+    matchScore: row.matchScore ?? 0,
+    structureScore: d.structureScore ?? d.structure?.score ?? 0,
+    expressionScore: d.expressionScore ?? d.expression?.score ?? 0,
+    atsScore: d.atsScore ?? d.ATS?.score ?? 0,
+    keywordCoverage,
+    matchedKeywords,
+    missingKeywords,
+    partialKeywords,
+    summary,
+  };
+}
+
+module.exports = { initDb, saveAnalysis, listHistory, listHistoryPaginated, deleteHistoryById, getHistoryById, toggleFavorite, getDashboard, getScoreTrend, getAllTags, createTag, deleteTag, getTagsByAnalysis, setAnalysisTags, addTagToAnalysis, removeTagFromAnalysis, getLatestPreview, DB_PATH };

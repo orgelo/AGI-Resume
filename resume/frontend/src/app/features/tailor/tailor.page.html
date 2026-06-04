@@ -1,0 +1,213 @@
+<div class="page polish-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-header-inner">
+      <div>
+        <div class="page-icon">✦</div>
+        <div class="page-title">简历精修</div>
+        <div class="page-sub">上传简历 + 粘贴岗位JD，AI 针对性优化表达、强化匹配关键词</div>
+      </div>
+      <div class="page-meta">
+        <span class="meta-tag">AI 重写</span>
+        <span class="meta-tag">差异对比</span>
+        <span class="meta-tag">关键词注入</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Setup Phase ========== -->
+  <div class="page-body" *ngIf="phase === 'setup'">
+    <!-- Steps -->
+    <div class="steps">
+      <div class="step">
+        <div class="step-num done">01</div>
+        <span class="step-label">上传简历</span>
+      </div>
+      <div class="step">
+        <div class="step-num" [class.done]="!!file">02</div>
+        <span class="step-label">填写目标岗位</span>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <span class="step-label">AI 精修输出</span>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Left: Form -->
+      <div>
+        <!-- Feature Cards -->
+        <div class="feature-strip">
+          <div class="feature-card">
+            <div class="feature-card-icon">🔍</div>
+            <div class="feature-card-title">语义匹配</div>
+            <div class="feature-card-desc">与 JD 逐句语义比对，定位差距</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">✏️</div>
+            <div class="feature-card-title">表达优化</div>
+            <div class="feature-card-desc">量化动词重写，提升说服力</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">🏷️</div>
+            <div class="feature-card-title">关键词注入</div>
+            <div class="feature-card-desc">自然植入缺失技术关键词</div>
+          </div>
+        </div>
+
+        <!-- Upload Card -->
+        <div class="card">
+          <div class="upload-zone" [class.has-file]="!!file" (click)="fileInput.click()" (dragover)="$event.preventDefault()" (drop)="onFileDrop($event)">
+            <input #fileInput type="file" accept=".pdf,.docx,.doc" (change)="onFileChange($event)" hidden />
+            <ng-container *ngIf="!file">
+              <div class="upload-icon-wrap">↑</div>
+              <div class="upload-text">拖拽或<span>点击上传</span>简历</div>
+              <div class="upload-formats">
+                <span class="fmt">PDF</span>
+                <span class="fmt">DOCX</span>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="file">
+              <div class="file-display">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span class="file-name">{{ file.name }}</span>
+                <span class="file-size">{{ formatFileSize(file.size) }}</span>
+                <button class="file-remove" (click)="removeFile($event)">✕</button>
+              </div>
+            </ng-container>
+          </div>
+
+          <div class="field-group">
+            <label class="label">目标岗位</label>
+            <input class="input-field" type="text" [(ngModel)]="jobTitle" placeholder="例如：高级前端工程师" />
+          </div>
+          <div class="field-group">
+            <label class="label">岗位描述（JD）<span class="required">*</span></label>
+            <textarea class="input-field" [(ngModel)]="jobDescription" placeholder="粘贴目标岗位的完整 JD 内容，AI 将据此优化你的简历" style="min-height:120px"></textarea>
+          </div>
+
+          <button class="btn-action" (click)="tailor()" [disabled]="loading || !file || !jobDescription.trim()">
+            <ng-container *ngIf="!loading">✦ &nbsp;开始精修</ng-container>
+            <ng-container *ngIf="loading">⏳ &nbsp;正在精修...</ng-container>
+          </button>
+        </div>
+
+        <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+      </div>
+
+      <!-- Right: Preview / Diff -->
+      <div class="card">
+        <div class="card-title">// 精修预览（示例）</div>
+        <div class="diff-legend">
+          <span class="diff-dot add">新增</span>
+          <span class="diff-dot del">删除</span>
+          <span class="diff-dot kw">关键词</span>
+        </div>
+        <div class="polish-preview">
+          <div>
+            <div class="preview-section-label">工作经历 · 前端开发工程师</div>
+            <span class="highlight-del">负责前端开发工作</span>
+            <span class="highlight-add">主导 3 个核心业务模块的前端架构设计与实现</span>，基于 <span class="highlight-kw">React 18</span> + <span class="highlight-kw">TypeScript</span> 构建高性能组件库
+          </div>
+          <div style="margin-top:12px">
+            <span class="highlight-del">做了性能优化</span>
+            <span class="highlight-add">通过 <span class="highlight-kw">懒加载</span>与 <span class="highlight-kw">虚拟列表</span>优化，页面首屏加载速度提升 <strong style="color:var(--green)">42%</strong></span>
+          </div>
+          <div style="margin-top:12px">
+            <span class="highlight-add">引入 <span class="highlight-kw">微前端</span>架构（<span class="highlight-kw">qiankun</span>），实现跨团队模块独立部署，降低耦合度 60%</span>
+          </div>
+        </div>
+        <div class="preview-stats">
+          <div class="pstat">
+            <div class="pstat-num green">+24%</div>
+            <div class="pstat-label">匹配度提升</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-num purple">8</div>
+            <div class="pstat-label">新增关键词</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-num cyan">12</div>
+            <div class="pstat-label">优化句数</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Result Phase ========== -->
+  <div class="page-body" *ngIf="phase === 'result' && result">
+    <div class="result-header">
+      <h2>精修完成</h2>
+      <p>{{ result.summary }}</p>
+      <div class="result-actions">
+        <button class="btn-export pdf" (click)="exportFormat('pdf')">导出 PDF</button>
+        <button class="btn-export docx" (click)="exportFormat('docx')">导出 DOCX</button>
+        <button class="btn-reset" (click)="reset()">重新精修</button>
+      </div>
+    </div>
+
+    <!-- Change Stats -->
+    <div class="change-stats-row">
+      <div class="change-stat" [class.active]="changeFilter === 'keyword'" (click)="changeFilter = 'keyword'">
+        <span class="cs-num">{{ getChangeCount('keyword') }}</span>
+        <span class="cs-label">关键词增强</span>
+      </div>
+      <div class="change-stat" [class.active]="changeFilter === 'expression'" (click)="changeFilter = 'expression'">
+        <span class="cs-num">{{ getChangeCount('expression') }}</span>
+        <span class="cs-label">表达优化</span>
+      </div>
+      <div class="change-stat" [class.active]="changeFilter === 'structure'" (click)="changeFilter = 'structure'">
+        <span class="cs-num">{{ getChangeCount('structure') }}</span>
+        <span class="cs-label">结构调整</span>
+      </div>
+      <div class="change-stat" [class.active]="changeFilter === 'order'" (click)="changeFilter = 'order'">
+        <span class="cs-num">{{ getChangeCount('order') }}</span>
+        <span class="cs-label">排序优化</span>
+      </div>
+      <div class="change-stat" [class.active]="changeFilter === 'all'" (click)="changeFilter = 'all'">
+        <span class="cs-num">{{ result.changes.length }}</span>
+        <span class="cs-label">总计</span>
+      </div>
+    </div>
+
+    <!-- View Tabs -->
+    <div class="view-tabs">
+      <button [class.active]="viewTab === 'diff'" (click)="viewTab = 'diff'">逐项对比</button>
+      <button [class.active]="viewTab === 'preview'" (click)="viewTab = 'preview'">完整预览</button>
+    </div>
+
+    <!-- Diff -->
+    <div class="diff-list" *ngIf="viewTab === 'diff'">
+      <div class="diff-item" *ngFor="let c of getFilteredChanges()">
+        <div class="diff-header">
+          <span class="diff-type" [class]="'dt-' + c.type">{{ getChangeTypeLabel(c.type) }}</span>
+          <span class="diff-reason">{{ c.reason }}</span>
+        </div>
+        <div class="diff-panels">
+          <div class="diff-side original">
+            <span class="diff-side-label">原文</span>
+            <p>{{ c.original }}</p>
+          </div>
+          <span class="diff-arrow">→</span>
+          <div class="diff-side rewritten">
+            <span class="diff-side-label">优化后</span>
+            <p>{{ c.rewritten }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-full" *ngIf="viewTab === 'preview'">
+      <div class="preview-card">
+        <pre>{{ result.tailoredResume }}</pre>
+      </div>
+    </div>
+
+    <div class="export-bar">
+      <button class="btn-export pdf" (click)="exportFormat('pdf')">导出 PDF</button>
+      <button class="btn-export docx" (click)="exportFormat('docx')">导出 DOCX</button>
+    </div>
+  </div>
+</div>

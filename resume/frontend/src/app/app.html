@@ -1,12 +1,23 @@
 <div class="shell">
-  <header class="topbar">
-    <div class="brand">ResumeMind</div>
-    <nav>
-      <a routerLink="/analyze" routerLinkActive="active">分析</a>
-      <a routerLink="/history" routerLinkActive="active">历史</a>
-      <a routerLink="/dashboard" routerLinkActive="active">看板</a>
-    </nav>
-  </header>
+  <!-- NAV -->
+  <nav class="nav-glass">
+    <a routerLink="/analyze" class="nav-logo">
+      <div class="logo-mark">R</div>
+      ResumeMind
+    </a>
+    <ul class="nav-center">
+      <li><a routerLink="/analyze" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">智能分析</a></li>
+      <li><a routerLink="/history" routerLinkActive="active">历史记录</a></li>
+      <li><a routerLink="/dashboard" routerLinkActive="active">数据看板</a></li>
+      <li><a routerLink="/interview" routerLinkActive="active">模拟面试</a></li>
+      <li><a routerLink="/career-roadmap" routerLinkActive="active">职业路线</a></li>
+      <li><a routerLink="/tailor" routerLinkActive="active">简历精修</a></li>
+    </ul>
+    <div class="nav-right">
+      <button class="btn-nav btn-nav-fill" routerLink="/analyze">开始分析</button>
+    </div>
+  </nav>
+
   <main class="content">
     <router-outlet />
   </main>

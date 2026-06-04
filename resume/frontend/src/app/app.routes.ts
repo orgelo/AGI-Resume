@@ -27,5 +27,20 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/dashboard/dashboard.page').then((m) => m.DashboardPage),
   },
+  {
+    path: 'interview',
+    loadComponent: () =>
+      import('./features/interview/interview.page').then((m) => m.InterviewPage),
+  },
+  {
+    path: 'career-roadmap',
+    loadComponent: () =>
+      import('./features/career-roadmap/career-roadmap.page').then((m) => m.CareerRoadmapPage),
+  },
+  {
+    path: 'tailor',
+    loadComponent: () =>
+      import('./features/tailor/tailor.page').then((m) => m.TailorPage),
+  },
   { path: '**', redirectTo: 'analyze' },
 ];

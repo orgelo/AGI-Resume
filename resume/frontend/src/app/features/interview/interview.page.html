@@ -1,0 +1,245 @@
+<div class="page interview-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-header-inner">
+      <div>
+        <div class="page-icon">💬</div>
+        <div class="page-title">模拟面试</div>
+        <div class="page-sub">上传简历 + 填写岗位描述，AI 面试官将针对你的简历进行模拟面试</div>
+      </div>
+      <div class="page-meta">
+        <span class="meta-tag">技术面</span>
+        <span class="meta-tag">HR 面</span>
+        <span class="meta-tag">实时反馈</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Setup Phase ========== -->
+  <div class="page-body" *ngIf="phase === 'setup'">
+    <div class="grid-2">
+      <!-- Left: Form -->
+      <div>
+        <div class="feature-strip">
+          <div class="feature-card">
+            <div class="feature-card-icon">🤖</div>
+            <div class="feature-card-title">AI 面试官</div>
+            <div class="feature-card-desc">针对你的简历出题，不走模板</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">💬</div>
+            <div class="feature-card-title">实时评分</div>
+            <div class="feature-card-desc">每条回答即时评估与建议</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">📊</div>
+            <div class="feature-card-title">复盘报告</div>
+            <div class="feature-card-desc">面试结束后生成完整报告</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="upload-zone" [class.has-file]="!!file" (click)="fileInput.click()" (dragover)="$event.preventDefault()" (drop)="onFileDrop($event)">
+            <input #fileInput type="file" accept=".pdf,.docx,.doc" (change)="onFileChange($event)" hidden />
+            <ng-container *ngIf="!file">
+              <div class="upload-icon-wrap">↑</div>
+              <div class="upload-text">拖拽或<span>点击上传</span>简历（可选）</div>
+              <div class="upload-formats">
+                <span class="fmt">PDF</span>
+                <span class="fmt">DOCX</span>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="file">
+              <div class="file-display">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span class="file-name">{{ file.name }}</span>
+                <span class="file-size">{{ formatFileSize(file.size) }}</span>
+                <button class="file-remove" (click)="removeFile($event)">✕</button>
+              </div>
+            </ng-container>
+          </div>
+
+          <div class="field-group">
+            <label class="label">目标岗位</label>
+            <input class="input-field" type="text" [(ngModel)]="jobTitle" placeholder="例如：前端开发工程师" />
+          </div>
+          <div class="field-group">
+            <label class="label">岗位描述（JD）</label>
+            <textarea class="input-field" [(ngModel)]="jobDescription" placeholder="粘贴目标岗位的 JD 内容，面试官将据此出题" style="min-height:100px"></textarea>
+          </div>
+
+          <button class="btn-action" (click)="startInterview()" [disabled]="loading">
+            <ng-container *ngIf="!loading">💬 &nbsp;开始面试</ng-container>
+            <ng-container *ngIf="loading">⏳ &nbsp;正在准备...</ng-container>
+          </button>
+        </div>
+
+        <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+      </div>
+
+      <!-- Right: Chat Preview -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div class="card-title" style="padding:20px 20px 0">// 面试对话预览</div>
+        <div class="interview-preview">
+          <div class="ip-bar">
+            <span class="ip-dot"></span>
+            AI 面试官 · 技术轮
+            <span class="ip-time">00:03:42</span>
+          </div>
+          <div class="chat-messages">
+            <div class="chat-msg">
+              <div class="chat-avatar ai">AI</div>
+              <div class="chat-bubble">你好，我看到你的简历中提到了 <strong>React 性能优化</strong>的经验，能具体说说你是如何做虚拟列表的吗？</div>
+            </div>
+            <div class="chat-msg user">
+              <div class="chat-avatar user-av">我</div>
+              <div class="chat-bubble">我使用了 react-window 库，通过只渲染可视区域的 DOM 节点来解决长列表性能问题，结合 useCallback 避免子组件不必要的重渲染...</div>
+            </div>
+            <div class="chat-msg">
+              <div class="chat-avatar ai">AI</div>
+              <div class="chat-bubble feedback">
+                <strong>✓ 回答较好</strong><br>
+                提到了核心思路，建议补充一下 overscanCount 参数的作用以及与 react-virtualized 的对比...
+              </div>
+            </div>
+            <div class="chat-msg">
+              <div class="chat-avatar ai">AI</div>
+              <div class="chat-bubble typing">
+                <span class="tdot"></span><span class="tdot"></span><span class="tdot"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Chat Phase ========== -->
+  <div *ngIf="phase === 'chat'" class="chat-phase">
+    <div class="chat-header-bar">
+      <div class="ch-title">
+        <span class="ch-dot"></span>
+        AI 面试官 · {{ getCategoryLabel(currentCategory) }}
+        <span class="ch-time">{{ messages.length }} 轮对话</span>
+      </div>
+      <div class="ch-actions">
+        <button class="ch-end-btn" (click)="endInterview()" [disabled]="loading">结束面试</button>
+        <button class="ch-reset-btn" (click)="resetInterview()">重新开始</button>
+      </div>
+    </div>
+
+    <div #chatContainer class="chat-body">
+      <div *ngFor="let msg of messages" class="chat-msg" [class.user]="msg.role === 'user'">
+        <div class="chat-avatar" [class.ai]="msg.role === 'assistant'" [class.user-av]="msg.role === 'user'">
+          {{ msg.role === 'assistant' ? 'AI' : '我' }}
+        </div>
+        <div class="chat-bubble">{{ msg.content }}</div>
+      </div>
+      <div *ngIf="loading" class="chat-msg">
+        <div class="chat-avatar ai">AI</div>
+        <div class="chat-bubble typing">
+          <span class="tdot"></span><span class="tdot"></span><span class="tdot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input-area">
+      <textarea
+        #inputArea
+        [(ngModel)]="userInput"
+        placeholder="输入你的回答...（Enter 发送，Shift+Enter 换行）"
+        rows="2"
+        (keydown)="onKeydown($event)"
+        [disabled]="loading"
+      ></textarea>
+      <button class="send-btn" (click)="sendMessage()" [disabled]="!userInput.trim() || loading">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ========== Evaluate Phase ========== -->
+  <div class="page-body" *ngIf="phase === 'evaluate'">
+    <div class="result-header">
+      <h2>面试评估报告</h2>
+      <p>基于你的面试表现，以下是综合评估</p>
+    </div>
+
+    <div *ngIf="loading" class="loading-state">
+      <div class="loader"></div>
+      <p>正在生成评估报告...</p>
+    </div>
+
+    <div *ngIf="!loading && evaluation">
+      <!-- Score Rings -->
+      <div class="score-rings">
+        <div class="score-ring">
+          <svg width="100" height="100" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+            <circle cx="50" cy="50" r="45" fill="none" [attr.stroke]="getScoreColor(evaluation.technicalScore)" stroke-width="8" stroke-linecap="round"
+              [style.strokeDasharray]="circumference" [style.strokeDashoffset]="getDashOffset(evaluation.technicalScore)" transform="rotate(-90 50 50)"/>
+          </svg>
+          <div class="sr-num">{{ evaluation.technicalScore }}</div>
+          <div class="sr-label">技术能力</div>
+        </div>
+        <div class="score-ring">
+          <svg width="100" height="100" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+            <circle cx="50" cy="50" r="45" fill="none" [attr.stroke]="getScoreColor(evaluation.communicationScore)" stroke-width="8" stroke-linecap="round"
+              [style.strokeDasharray]="circumference" [style.strokeDashoffset]="getDashOffset(evaluation.communicationScore)" transform="rotate(-90 50 50)"/>
+          </svg>
+          <div class="sr-num">{{ evaluation.communicationScore }}</div>
+          <div class="sr-label">沟通能力</div>
+        </div>
+        <div class="score-ring">
+          <svg width="100" height="100" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+            <circle cx="50" cy="50" r="45" fill="none" [attr.stroke]="getScoreColor(evaluation.starScore)" stroke-width="8" stroke-linecap="round"
+              [style.strokeDasharray]="circumference" [style.strokeDashoffset]="getDashOffset(evaluation.starScore)" transform="rotate(-90 50 50)"/>
+          </svg>
+          <div class="sr-num">{{ evaluation.starScore }}</div>
+          <div class="sr-label">STAR 法则</div>
+        </div>
+      </div>
+
+      <!-- Overall -->
+      <div class="card overall-card">
+        <div class="card-title">综合评价</div>
+        <p style="font-size:13px;color:var(--t2);line-height:1.7">{{ evaluation.overallComment }}</p>
+      </div>
+
+      <!-- Category Scores -->
+      <div class="card">
+        <div class="card-title">分项评分</div>
+        <div class="cat-scores">
+          <div *ngFor="let item of categoryEntries" class="cat-row">
+            <span class="cat-name">{{ item.label }}</span>
+            <div class="cat-bar-bg"><div class="cat-bar-fill" [style.width]="item.score + '%'" [style.background]="getScoreColor(item.score)"></div></div>
+            <span class="cat-val">{{ item.score }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Strengths & Suggestions -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">亮点</div>
+          <ul class="res-list">
+            <li *ngFor="let s of evaluation.strengths">{{ s }}</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">面试建议</div>
+          <ul class="res-list">
+            <li *ngFor="let s of evaluation.suggestions">{{ s }}</li>
+          </ul>
+        </div>
+      </div>
+
+      <button class="btn-reset center" (click)="resetInterview()">重新面试</button>
+    </div>
+  </div>
+</div>
