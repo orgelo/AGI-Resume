@@ -1,59 +1,90 @@
-# Frontend
+# ResumeMind Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.4.
+ResumeMind 前端项目 — 基于 Angular 21 的智能简历教练平台。
 
-## Development server
+## 技术栈
 
-To start a local development server, run:
+| 技术 | 版本 | 说明 |
+|------|------|------|
+| Angular | 21.2.0 | 前端框架 |
+| TypeScript | 5.9.2 | 开发语言 |
+| SCSS | — | 样式预处理 |
+| RxJS | 7.8 | 响应式编程 |
+| Compodoc | 1.2.1 | 文档生成 |
 
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## 开发启动
 
 ```bash
-ng generate component component-name
+npm install
+npm start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+服务将运行在 `http://localhost:4200/`，并自动打开浏览器。
+
+## 项目结构
+
+```
+src/
+├── app/
+│   ├── core/              # 核心模块（服务、模型）
+│   │   ├── services/
+│   │   │   └── resume-api.service.ts
+│   │   └── models/
+│   │       ├── analysis.model.ts
+│   │       ├── interview.model.ts
+│   │       └── dashboard.model.ts
+│   ├── features/          # 功能页面
+│   │   ├── analyze/       # 竞争力分析首页
+│   │   ├── interview/     # 模拟面试
+│   │   ├── career-roadmap/# 职业路线
+│   │   ├── tailor/        # 简历精修
+│   │   ├── dashboard/     # 数据看板
+│   │   ├── history/       # 历史记录列表
+│   │   └── page-history-detail/  # 记录详情
+│   ├── shared/            # 共享组件
+│   │   ├── components/
+│   │   │   ├── result-panel/     # 分析结果面板
+│   │   │   └── result-card/      # 结果卡片
+│   │   └── pipes/
+│   │       ├── truncate.pipe.ts
+│   │       ├── score-color.pipe.ts
+│   │       └── keyword-count.pipe.ts
+│   └── app.config.ts      # 应用配置
+├── environments/          # 环境配置
+├── styles.scss            # 全局样式
+└── index.html
+```
+
+## 核心页面
+
+| 页面 | 路由 | 说明 |
+|------|------|------|
+| AnalyzePage | `/` | 首页，文件上传 + AI 分析 |
+| InterviewPage | `/interview` | AI 模拟面试 |
+| CareerRoadmapPage | `/career-roadmap` | 职业发展规划 |
+| TailorPage | `/tailor` | 简历精修 |
+| DashboardPage | `/dashboard` | 数据看板 |
+| HistoryPage | `/history` | 分析历史 |
+| PageHistoryDetail | `/history/:id` | 历史详情 |
+
+## 构建
 
 ```bash
-ng generate --help
+# 开发构建
+ng build --configuration development
+
+# 生产构建
+ng build --configuration production
 ```
 
-## Building
-
-To build the project run:
+## 文档生成 (Compodoc)
 
 ```bash
-ng build
+npx compodoc -d dist/docs -p tsconfig.doc.json -s -w --language zh-CN
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+文档将生成在 `dist/docs` 目录，通过 `http://localhost:8080` 访问。
 
-## Running unit tests
+## 后端依赖
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+前端需要后端服务运行在 `http://localhost:3000`，详见 [后端 README](../backend/README.md)。
